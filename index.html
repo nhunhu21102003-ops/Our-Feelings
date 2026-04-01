@@ -247,7 +247,7 @@
     </div>
 
     <!-- Letter Modal -->
-    <div id="note-modal" class="modal" onclick="closeModal()">
+   <div id="note-modal" class="modal" onclick="closeModal()">
         <div class="letter" onclick="event.stopPropagation()">
             <div id="modal-meta" class="text-[10px] text-slate-400 font-sans font-bold uppercase mb-4"></div>
             <p id="modal-text" class="text-xl text-slate-700 leading-relaxed"></p>
@@ -257,8 +257,24 @@
         </div>
     </div>
 
-    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity z-[200] pointer-events-none"></div>
+    <div id="delete-modal" class="modal" style="z-index: 300;">
+        <div class="bg-pink-50 p-8 rounded-[40px] shadow-2xl border-4 border-white max-w-[300px] text-center transform scale-90 transition-all">
+            <div class="text-4xl mb-4">🥺</div>
+            <p class="text-slate-700 font-bold leading-relaxed mb-6">
+                Cưng muốn xóa kỉ niệm này đúng hông?
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-2xl bg-slate-200 text-slate-500 font-bold active:scale-95 transition-all">
+                    Hủy
+                </button>
+                <button id="confirm-delete-btn" class="flex-1 py-3 rounded-2xl bg-pink-400 text-white font-bold shadow-lg shadow-pink-200 active:scale-95 transition-all">
+                    Xóa luôn
+                </button>
+            </div>
+        </div>
+    </div>
 
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity z-[200] pointer-events-none"></div>
     <script>
        const firebaseConfig = {
     apiKey: "AIzaSyB8tJFf26QZfNjDgZwP8zPlBPYZuqMwI3M",
@@ -457,11 +473,27 @@ async function renderJar(snapshot, shouldPlaySound = false) {
         }
 }
 
+// --- CÁC HÀM XỬ LÝ XÓA MỚI (ĐÃ THAY THẾ) ---
+let pendingDeleteId = null; 
+
 async function deleteItem(id) {
-    if (confirm("Xóa kỷ niệm này?")) {
-        await db.collection("feelings_data").doc(id).delete();
-        showToast("Đã xóa ✨");
-    }
+    pendingDeleteId = id;
+    const modal = document.getElementById('delete-modal');
+    modal.style.display = 'flex';
+    
+    // Gán sự kiện cho nút "Xóa luôn" trong modal
+    document.getElementById('confirm-delete-btn').onclick = async () => {
+        if (pendingDeleteId) {
+            await db.collection("feelings_data").doc(pendingDeleteId).delete();
+            showToast("Đã xóa ✨");
+            closeDeleteModal();
+        }
+    };
+}
+
+function closeDeleteModal() {
+    document.getElementById('delete-modal').style.display = 'none';
+    pendingDeleteId = null;
 }
 
 async function sendEmotion(emoji, type) {
