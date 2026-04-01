@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lưu Giữ Cảm Xúc </title>
+    <title>Lưu Giữ Cảm Xúc</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
@@ -72,14 +72,6 @@
             100% { transform: translateY(0) rotate(var(--r, 0deg)); opacity: 1; }
         }
 
-        .note-paper::after {
-            content: '';
-            position: absolute;
-            top: 5px; left: 5px; right: 5px; height: 1px;
-            background: #facc15;
-            box-shadow: 0 4px 0 #facc15, 0 8px 0 #facc15;
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -104,7 +96,6 @@
             position: relative;
         }
 
-        /* Hiệu ứng màu cho bóng cảm xúc */
         .ball-happy { background: radial-gradient(circle at 35% 35%, #86efac, #22c55e); }
         .ball-sad { background: radial-gradient(circle at 35% 35%, #93c5fd, #3b82f6); }
         .ball-angry { background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444); }
@@ -117,45 +108,13 @@
         .ball-cry { background: radial-gradient(circle at 35% 35%, #e0f2fe, #0ea5e9); }
         .ball-pig { background: radial-gradient(circle at 35% 35%, #f1f5f9, #64748b); }
         .ball-sparkle { background: radial-gradient(circle at 35% 35%, #faf5ff, #c084fc); }
-        
-        /* Hiệu ứng màu cho 3 emoji mới */
         .ball-poop { background: radial-gradient(circle at 35% 35%, #b45309, #78350f); }
         .ball-clown { background: radial-gradient(circle at 35% 35%, #fee2e2, #ef4444); }
         .ball-smirk { background: radial-gradient(circle at 35% 35%, #fef08a, #ca8a04); }
-        
-        /* Tùy chỉnh Scrollbar cho dãy cảm xúc */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-            margin: 0 20px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
 
-        /* Ẩn scrollbar mặc định trên mobile nhưng vẫn cho phép scroll */
-        @media (max-width: 768px) {
-            .custom-scrollbar::-webkit-scrollbar {
-                display: none;
-            }
-            .custom-scrollbar {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-            }
-        }
-
-        .delete-btn {
-            position: relative;
-            z-index: 50;
-            pointer-events: auto;
-            cursor: pointer;
-        }
+        .custom-scrollbar::-webkit-scrollbar { height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; margin: 0 20px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
         .emoji-badge {
             width: 36px;
@@ -171,7 +130,6 @@
 </head>
 <body class="pb-10">
 
-    <!-- Login Screen -->
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-pink-50">
             <div class="text-center mb-8">
@@ -189,14 +147,17 @@
         </div>
     </div>
 
-    <!-- Main App Screen -->
     <div id="app-screen" class="hidden max-w-lg mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
             <div>
                 <h2 class="text-xl font-bold text-slate-800"> Our Feelings</h2>
-                <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
-                <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
-<p id="love-counter" class="text-[12px] text-slate-400 font-medium mt-1 italic"></p>
+                <div class="flex items-center gap-2">
+                    <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
+                    <button onclick="openRenameModal()" class="text-[10px] bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full hover:bg-pink-200">
+                        Rename ✏️
+                    </button>
+                </div>
+                <p id="love-counter" class="text-[12px] text-slate-400 font-medium mt-1 italic"></p>
             </div>
             <button onclick="copyLink()" class="p-3 bg-white rounded-full shadow-sm border border-slate-100 hover:bg-slate-50 transition-all">
                 <span class="text-lg">🔗</span>
@@ -204,11 +165,8 @@
         </header>
 
         <div class="jar-cap"></div>
-        <div class="jar-container" id="jar-content">
-            <!-- Items injected here -->
-        </div>
+        <div class="jar-container" id="jar-content"></div>
 
-        <!-- Emoji Bar với Scrollbar và 3 emoji mới -->
         <div class="mt-6 bg-white/60 rounded-3xl shadow-sm border border-white">
             <div class="flex overflow-x-auto gap-4 p-4 custom-scrollbar">
                 <button onclick="sendEmotion('😊', 'happy')" class="flex-shrink-0 w-12 h-12 rounded-full ball-happy flex items-center justify-center text-xl shadow-md active:scale-90">😊</button>
@@ -229,7 +187,6 @@
             </div>
         </div>
 
-        <!-- Note Input -->
         <div class="mt-6 bg-white rounded-3xl p-4 shadow-lg border border-slate-50">
             <textarea id="note-input" class="w-full bg-transparent border-none focus:ring-0 text-slate-700 placeholder-slate-300 min-h-[80px] text-sm resize-none" placeholder="Bạn muốn nhắn gì cho người ấy?"></textarea>
             <div class="flex justify-end mt-2 pt-2 border-t border-slate-50">
@@ -239,15 +196,13 @@
             </div>
         </div>
 
-        <!-- Feeds -->
         <div class="mt-8">
             <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Nhật ký cảm xúc và lời nhắn</h3>
             <div id="activity-feed" class="space-y-3 pb-20"></div>
         </div>
     </div>
 
-    <!-- Letter Modal -->
-   <div id="note-modal" class="modal" onclick="closeModal()">
+    <div id="note-modal" class="modal" onclick="closeModal()">
         <div class="letter" onclick="event.stopPropagation()">
             <div id="modal-meta" class="text-[10px] text-slate-400 font-sans font-bold uppercase mb-4"></div>
             <p id="modal-text" class="text-xl text-slate-700 leading-relaxed"></p>
@@ -258,7 +213,7 @@
     </div>
 
     <div id="delete-modal" class="modal" style="z-index: 300;">
-        <div class="bg-pink-50 p-8 rounded-[40px] shadow-2xl border-4 border-white max-w-[300px] text-center transform scale-90 transition-all">
+        <div class="bg-pink-50 p-8 rounded-[40px] shadow-2xl border-4 border-white max-w-[300px] text-center">
             <div class="text-4xl mb-4">🥺</div>
             <p class="text-slate-700 font-bold leading-relaxed mb-6">
                 Cưng muốn xóa kỉ niệm này đúng hông?
@@ -274,269 +229,244 @@
         </div>
     </div>
 
+    <div id="rename-modal" class="modal" style="z-index: 400;">
+        <div class="bg-white p-8 rounded-[40px] shadow-2xl border-4 border-pink-100 max-w-[300px] text-center">
+            <div class="text-3xl mb-4">✨</div>
+            <p class="text-slate-700 font-bold mb-4">Cưng muốn đổi tên thành gì?</p>
+            <input type="text" id="new-name-input" class="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4 text-center" placeholder="Tên mới...">
+            <div class="flex gap-3">
+                <button onclick="closeRenameModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-400 font-bold">Hủy</button>
+                <button onclick="saveNewName()" class="flex-1 py-3 rounded-2xl bg-pink-500 text-white font-bold shadow-lg">Lưu</button>
+            </div>
+        </div>
+    </div>
+
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity z-[200] pointer-events-none"></div>
+
     <script>
-       const firebaseConfig = {
-    apiKey: "AIzaSyB8tJFf26QZfNjDgZwP8zPlBPYZuqMwI3M",
-    authDomain: "feelings-11f29.firebaseapp.com",
-    projectId: "feelings-11f29",
-    storageBucket: "feelings-11f29.firebasestorage.app",
-    messagingSenderId: "160485524876",
-    appId: "1:160485524876:web:5476b22eede288f2c082a9"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyB8tJFf26QZfNjDgZwP8zPlBPYZuqMwI3M",
+            authDomain: "feelings-11f29.firebaseapp.com",
+            projectId: "feelings-11f29",
+            storageBucket: "feelings-11f29.firebasestorage.app",
+            messagingSenderId: "160485524876",
+            appId: "1:160485524876:web:5476b22eede288f2c082a9"
+        };
 
-// Khởi tạo Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-function updateLoveCounter() {
-    // Nhớ sửa ngày này thành ngày hai bạn bắt đầu yêu nhau (Năm-Tháng-Ngày)
-    const startDate = new Date('2024-05-16'); 
-    const now = new Date();
-    const diffTime = Math.abs(now - startDate);
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-   document.getElementById('love-counter').innerHTML = `Chúng mình đã bám nhau <span class="text-pink-500 font-bold">${diffDays}</span> ngày 💋`;
-}
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
 
-let currentUser = null;
-let userName = localStorage.getItem('jar_user_name') || '';
-let lastItemCount = 0;
-
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-// --- ÂM THANH ---
-function playCrystalSound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
-}
-
-function playPaperSound() {
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-}
-
-// --- LOGIC CHÍNH ---
-async function init() {
-    try {
-        await auth.signInAnonymously();
-    } catch (e) { console.error("Lỗi đăng nhập:", e); }
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            if (userName) showApp();
-        }
-    });
-}
-
-function handleLogin() {
-    const input = document.getElementById('username-input');
-    const name = input.value.trim();
-    if (!name) return;
-    userName = name;
-    localStorage.setItem('jar_user_name', name);
-    showApp();
-}
-
-function showApp() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('app-screen').classList.remove('hidden');
-    document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
-    updateLoveCounter();
-    startListening();
-}
-
-// Lắng nghe dữ liệu từ 1 collection duy nhất để tránh lỗi
-function startListening() {
-    db.collection("feelings_data").orderBy('time', 'desc').onSnapshot(snapshot => {
-        renderJar(snapshot, true);
-    });
-}
-
-const emotionLabels = {
-    'happy': 'Cảm thấy dui vô cùng', 'sad': 'Cảm thấy buồn thí mẹ',
-    'heart': 'Cảm thấy Yêu vaio', 'kiss': 'Cảm thấy muốn hôn iu',
-    'tired': 'Cảm thấy Mệt mỏi', 'cool': 'Cảm thấy Ngầu vá',
-    'angry': 'Cảm thấy Giận dữ vá đi', 'pinkheart': 'Cảm thấy Rất yêu ó',
-    'lovely': 'Cảm thấy nhớ iu', 'cry': 'Cảm thấy mít ướt',
-    'pig': 'Cảm thấy Lười biếng', 'sparkle': 'Cảm thấy Đen tối',
-    'smirk': 'Cảm thấy Cười ẻ', 'clown': 'Cảm thấy hề cốt', 'poop': 'Cảm thấy như cục sếch'
-};
-
-async function renderJar(snapshot, shouldPlaySound = false) {
-    const jar = document.getElementById('jar-content');
-    const feed = document.getElementById('activity-feed');
-    
-    const allActivities = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-
-    if (shouldPlaySound && allActivities.length > lastItemCount && lastItemCount !== 0) {
-        const latest = allActivities[0];
-        latest.type ? playCrystalSound() : playPaperSound();
-    }
-    lastItemCount = allActivities.length;
-
-    jar.innerHTML = '';
-    feed.innerHTML = '';
-
-    allActivities.forEach(item => {
-        // 1. Vẽ vào hũ thủy tinh
-        const el = document.createElement('div');
-        if (item.type) { 
-            el.className = `ball ball-${item.type}`;
-            el.textContent = item.emoji;
-        } else { 
-            el.className = `note-paper`;
-            el.onclick = () => openNote(item);
-        }
-        el.style.left = `${item.posX}px`;
-        el.style.bottom = `${item.posY}px`;
-        el.style.setProperty('--r', `${item.rotation}deg`);
-        jar.appendChild(el);
-
-        // 2. Vẽ vào Nhật ký (Feed) - Phần này đã được cải tiến:
-        const div = document.createElement('div');
-        div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2 transition-all hover:shadow-md';
-        
-        // Tạo vùng chứa nội dung (Click vào đây để xem chi tiết nếu là lời nhắn)
-        const contentWrapper = document.createElement('div');
-        contentWrapper.className = 'flex items-center gap-3 flex-1 cursor-pointer';
-        
-        if (item.type) {
-            contentWrapper.innerHTML = `
-                <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
-                <div>
-                    <p class="font-bold text-slate-700">${item.sender}</p>
-                    <p class="text-slate-400 text-[9px] font-bold">${emotionLabels[item.type] || 'Cảm xúc'}</p>
-                </div>`;
-        } else {
-            contentWrapper.innerHTML = `
-                <div class="emoji-badge bg-yellow-50 text-yellow-600">💌</div>
-                <div>
-                    <p class="font-bold text-slate-700">${item.sender}</p>
-                    <p class="text-slate-400 text-[9px] font-bold">Đã gửi thư</p>
-                </div>`;
-            contentWrapper.onclick = () => openNote(item);
+        function updateLoveCounter() {
+            const startDate = new Date('2024-05-16'); 
+            const now = new Date();
+            const diffDays = Math.floor(Math.abs(now - startDate) / (1000 * 60 * 60 * 24));
+            document.getElementById('love-counter').innerHTML = `Chúng mình đã bám nhau <span class="text-pink-500 font-bold">${diffDays}</span> ngày 💋`;
         }
 
-        // Tạo vùng chứa thời gian và nút xóa
-        const actionWrapper = document.createElement('div');
-        actionWrapper.className = 'flex items-center gap-2';
-        const isOwner = currentUser && item.uid === currentUser.uid;
-        
-        const timeStr = new Date(item.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
-        
-        actionWrapper.innerHTML = `<span class="text-[9px] text-slate-300">${timeStr}</span>`;
-        
-        if (isOwner) {
-            const delBtn = document.createElement('button');
-            delBtn.className = 'text-red-400 font-bold text-lg px-2 hover:text-red-600 transition-colors';
-            delBtn.innerHTML = '×';
-            delBtn.onclick = (e) => {
-                e.stopPropagation(); // Ngăn chặn việc mở modal lời nhắn khi bấm xóa
-                deleteItem(item.id);
+        let currentUser = null;
+        let userName = localStorage.getItem('jar_user_name') || '';
+        let lastItemCount = 0;
+        let pendingDeleteId = null;
+
+        async function init() {
+            try { await auth.signInAnonymously(); } catch (e) { console.error("Lỗi đăng nhập:", e); }
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    if (userName) showApp();
+                }
+            });
+        }
+
+        function handleLogin() {
+            const input = document.getElementById('username-input');
+            const name = input.value.trim();
+            if (!name) return;
+            userName = name;
+            localStorage.setItem('jar_user_name', name);
+            showApp();
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
+            updateLoveCounter();
+            startListening();
+        }
+
+        function startListening() {
+            db.collection("feelings_data").orderBy('time', 'desc').onSnapshot(snapshot => {
+                renderJar(snapshot);
+            });
+        }
+
+        const emotionLabels = {
+            'happy': 'Cảm thấy dui vô cùng', 'sad': 'Cảm thấy buồn thí mẹ',
+            'heart': 'Cảm thấy Yêu vaio', 'kiss': 'Cảm thấy muốn hôn iu',
+            'tired': 'Cảm thấy Mệt mỏi', 'cool': 'Cảm thấy Ngầu vá',
+            'angry': 'Cảm thấy Giận dữ vá đi', 'pinkheart': 'Cảm thấy Rất yêu ó',
+            'lovely': 'Cảm thấy nhớ iu', 'cry': 'Cảm thấy mít ướt',
+            'pig': 'Cảm thấy Lười biếng', 'sparkle': 'Cảm thấy Đen tối',
+            'smirk': 'Cảm thấy Cười ẻ', 'clown': 'Cảm thấy hề cốt', 'poop': 'Cảm thấy như cục sếch'
+        };
+
+        function renderJar(snapshot) {
+            const jar = document.getElementById('jar-content');
+            const feed = document.getElementById('activity-feed');
+            const jarEl = document.getElementById('jar-content');
+            const allActivities = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+
+            jar.innerHTML = '';
+            feed.innerHTML = '';
+
+            allActivities.forEach(item => {
+                const el = document.createElement('div');
+                if (item.type) { 
+                    el.className = `ball ball-${item.type}`;
+                    el.textContent = item.emoji;
+                } else { 
+                    el.className = `note-paper`;
+                    el.onclick = () => openNote(item);
+                }
+                el.style.left = `${item.posX}px`;
+                el.style.bottom = `${item.posY}px`;
+                el.style.setProperty('--r', `${item.rotation}deg`);
+                jar.appendChild(el);
+
+                const div = document.createElement('div');
+                div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2 transition-all hover:shadow-md';
+                
+                const contentWrapper = document.createElement('div');
+                contentWrapper.className = 'flex items-center gap-3 flex-1 cursor-pointer';
+                
+                if (item.type) {
+                    contentWrapper.innerHTML = `
+                        <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
+                        <div>
+                            <p class="font-bold text-slate-700">${item.sender}</p>
+                            <p class="text-slate-400 text-[9px] font-bold">${emotionLabels[item.type] || 'Cảm xúc'}</p>
+                        </div>`;
+                } else {
+                    contentWrapper.innerHTML = `
+                        <div class="emoji-badge bg-yellow-50 text-yellow-600">💌</div>
+                        <div>
+                            <p class="font-bold text-slate-700">${item.sender}</p>
+                            <p class="text-slate-400 text-[9px] font-bold">Đã gửi thư</p>
+                        </div>`;
+                    contentWrapper.onclick = () => openNote(item);
+                }
+
+                const actionWrapper = document.createElement('div');
+                actionWrapper.className = 'flex items-center gap-2';
+                const isOwner = currentUser && item.uid === currentUser.uid;
+                const timeStr = new Date(item.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+                actionWrapper.innerHTML = `<span class="text-[9px] text-slate-300">${timeStr}</span>`;
+                
+                if (isOwner) {
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'text-red-400 font-bold text-lg px-2 hover:text-red-600 transition-colors';
+                    delBtn.innerHTML = '×';
+                    delBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteItem(item.id);
+                    };
+                    actionWrapper.appendChild(delBtn);
+                }
+
+                div.appendChild(contentWrapper);
+                div.appendChild(actionWrapper);
+                feed.appendChild(div);
+            });
+
+            // Hiệu ứng đổi màu hũ khi giận
+            const angryCount = allActivities.filter(item => item.type === 'angry').length;
+            if (angryCount >= 3) {
+                jarEl.style.background = "rgba(254, 226, 226, 0.6)"; 
+                jarEl.style.borderColor = "#fca5a5";
+                jarEl.style.transition = "all 0.5s ease";
+            } else {
+                jarEl.style.background = "rgba(255, 255, 255, 0.2)";
+                jarEl.style.borderColor = "rgba(255, 255, 255, 0.8)";
+            }
+        }
+
+        async function deleteItem(id) {
+            pendingDeleteId = id;
+            document.getElementById('delete-modal').style.display = 'flex';
+            document.getElementById('confirm-delete-btn').onclick = async () => {
+                if (pendingDeleteId) {
+                    await db.collection("feelings_data").doc(pendingDeleteId).delete();
+                    showToast("Đã xóa ✨");
+                    closeDeleteModal();
+                }
             };
-            actionWrapper.appendChild(delBtn);
         }
 
-        div.appendChild(contentWrapper);
-        div.appendChild(actionWrapper);
-        feed.appendChild(div);
-    });
-    // --- LOGIC ĐỔI MÀU HŨ (Dán vào cuối hàm renderJar) ---
-        const allItems = snapshot.docs.map(d => d.data());
-        const angryCount = allItems.filter(item => item.type === 'angry').length;
-        const jarEl = document.getElementById('jar-content');
+        function closeDeleteModal() { document.getElementById('delete-modal').style.display = 'none'; }
 
-        if (angryCount >= 3) {
-            // Nếu có từ 3 icon Giận trở lên -> Hũ chuyển sang màu đỏ cảnh báo
-            jarEl.style.background = "rgba(254, 226, 226, 0.6)"; 
-            jarEl.style.borderColor = "#fca5a5";
-            jarEl.style.transition = "all 0.5s ease"; // Hiệu ứng đổi màu mượt mà
-        } else {
-            // Ít hơn 3 icon Giận -> Quay về màu trắng kính mờ mặc định
-            jarEl.style.background = "rgba(255, 255, 255, 0.2)";
-            jarEl.style.borderColor = "rgba(255, 255, 255, 0.8)";
+        async function sendEmotion(emoji, type) {
+            if (!currentUser) return;
+            await db.collection("feelings_data").add({
+                emoji, type, sender: userName, 
+                posX: Math.random() * 200 + 20, posY: Math.random() * 30,
+                rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
+            });
+            showToast(`Đã thả ${emoji}!`);
         }
-}
 
-// --- CÁC HÀM XỬ LÝ XÓA MỚI (ĐÃ THAY THẾ) ---
-let pendingDeleteId = null; 
-
-async function deleteItem(id) {
-    pendingDeleteId = id;
-    const modal = document.getElementById('delete-modal');
-    modal.style.display = 'flex';
-    
-    // Gán sự kiện cho nút "Xóa luôn" trong modal
-    document.getElementById('confirm-delete-btn').onclick = async () => {
-        if (pendingDeleteId) {
-            await db.collection("feelings_data").doc(pendingDeleteId).delete();
-            showToast("Đã xóa ✨");
-            closeDeleteModal();
+        async function sendNote() {
+            const input = document.getElementById('note-input');
+            const text = input.value.trim();
+            if (!text || !currentUser) return;
+            await db.collection("feelings_data").add({
+                text, sender: userName,
+                posX: Math.random() * 200 + 20, posY: Math.random() * 50 + 20,
+                rotation: Math.random() * 60 - 30, time: Date.now(), uid: currentUser.uid
+            });
+            input.value = '';
+            showToast("Gửi lời nhắn thành công 💌");
         }
-    };
-}
 
-function closeDeleteModal() {
-    document.getElementById('delete-modal').style.display = 'none';
-    pendingDeleteId = null;
-}
+        function openNote(note) {
+            document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • TỪ: ${note.sender}`;
+            document.getElementById('modal-text').textContent = note.text;
+            document.getElementById('note-modal').style.display = 'flex';
+        }
 
-async function sendEmotion(emoji, type) {
-    if (!currentUser) return;
-    await db.collection("feelings_data").add({
-        emoji, type, sender: userName, 
-        posX: Math.random() * 200 + 20, posY: Math.random() * 30,
-        rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
-    });
-    showToast(`Đã thả ${emoji}!`);
-}
+        function closeModal() { document.getElementById('note-modal').style.display = 'none'; }
 
-async function sendNote() {
-    const input = document.getElementById('note-input');
-    const text = input.value.trim();
-    if (!text || !currentUser) return;
-    await db.collection("feelings_data").add({
-        text, sender: userName,
-        posX: Math.random() * 200 + 20, posY: Math.random() * 50 + 20,
-        rotation: Math.random() * 60 - 30, time: Date.now(), uid: currentUser.uid
-    });
-    input.value = '';
-    showToast("Gửi lời nhắn thành công 💌");
-}
+        function openRenameModal() {
+            document.getElementById('rename-modal').style.display = 'flex';
+            document.getElementById('new-name-input').value = userName;
+        }
 
-function openNote(note) {
-    document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • TỪ: ${note.sender}`;
-    document.getElementById('modal-text').textContent = note.text;
-    document.getElementById('note-modal').style.display = 'flex';
-}
+        function closeRenameModal() { document.getElementById('rename-modal').style.display = 'none'; }
 
-function closeModal() { document.getElementById('note-modal').style.display = 'none'; }
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.style.opacity = '1';
-    setTimeout(() => t.style.opacity = '0', 3000);
-}
-function copyLink() {
-    navigator.clipboard.writeText(window.location.href);
-    showToast("Đã sao chép link! ❤️");
-}
+        function saveNewName() {
+            const newName = document.getElementById('new-name-input').value.trim();
+            if (newName) {
+                userName = newName;
+                localStorage.setItem('jar_user_name', newName);
+                document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
+                showToast("Đã đổi tên thành công! ✨");
+                closeRenameModal();
+            }
+        }
 
-window.onload = init;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 3000);
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href);
+            showToast("Đã sao chép link! ❤️");
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
