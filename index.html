@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lưu Giữ Cảm Xúc </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Quicksand:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #f8fafc;
+            touch-action: manipulation;
+        }
+
+        .jar-container {
+            width: 280px;
+            height: 380px;
+            margin: 0 auto;
+            position: relative;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            border: 4px solid rgba(255, 255, 255, 0.8);
+            border-radius: 80px 80px 120px 120px;
+            box-shadow: inset 0 10px 30px rgba(255,255,255,0.5), 0 20px 40px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .jar-cap {
+            width: 120px;
+            height: 20px;
+            background: #e2e8f0;
+            margin: 0 auto -5px auto;
+            border-radius: 8px 8px 2px 2px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+            z-index: 10;
+        }
+
+        .ball {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: inset -4px -4px 10px rgba(0,0,0,0.1), 0 5px 10px rgba(0,0,0,0.1);
+            animation: dropIn 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            cursor: help;
+        }
+
+        .note-paper {
+            width: 40px;
+            height: 25px;
+            background: #fef9c3;
+            border: 1px solid #fde047;
+            position: absolute;
+            box-shadow: 2px 4px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            border-radius: 2px;
+            animation: dropIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        @keyframes dropIn {
+            0% { transform: translateY(-400px) rotate(-45deg); opacity: 0; }
+            100% { transform: translateY(0) rotate(var(--r, 0deg)); opacity: 1; }
+        }
+
+        .note-paper::after {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; height: 1px;
+            background: #facc15;
+            box-shadow: 0 4px 0 #facc15, 0 8px 0 #facc15;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .letter {
+            background: #fffef2;
+            width: 100%;
+            max-width: 350px;
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            transform: rotate(-1deg);
+            font-family: 'Dancing Script', cursive;
+            position: relative;
+        }
+
+        /* Hiệu ứng màu cho bóng cảm xúc */
+        .ball-happy { background: radial-gradient(circle at 35% 35%, #86efac, #22c55e); }
+        .ball-sad { background: radial-gradient(circle at 35% 35%, #93c5fd, #3b82f6); }
+        .ball-angry { background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444); }
+        .ball-tired { background: radial-gradient(circle at 35% 35%, #d8b4fe, #a855f7); }
+        .ball-heart { background: radial-gradient(circle at 35% 35%, #fda4af, #f43f5e); }
+        .ball-kiss { background: radial-gradient(circle at 35% 35%, #fcd34d, #d97706); }
+        .ball-cool { background: radial-gradient(circle at 35% 35%, #94a3b8, #1e293b); }
+        .ball-pinkheart { background: radial-gradient(circle at 35% 35%, #fbcfe8, #ec4899); }
+        .ball-lovely { background: radial-gradient(circle at 35% 35%, #ffedd5, #f97316); }
+        .ball-cry { background: radial-gradient(circle at 35% 35%, #e0f2fe, #0ea5e9); }
+        .ball-pig { background: radial-gradient(circle at 35% 35%, #f1f5f9, #64748b); }
+        .ball-sparkle { background: radial-gradient(circle at 35% 35%, #faf5ff, #c084fc); }
+        
+        /* Hiệu ứng màu cho 3 emoji mới */
+        .ball-poop { background: radial-gradient(circle at 35% 35%, #b45309, #78350f); }
+        .ball-clown { background: radial-gradient(circle at 35% 35%, #fee2e2, #ef4444); }
+        .ball-smirk { background: radial-gradient(circle at 35% 35%, #fef08a, #ca8a04); }
+        
+        /* Tùy chỉnh Scrollbar cho dãy cảm xúc */
+        .custom-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+            margin: 0 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Ẩn scrollbar mặc định trên mobile nhưng vẫn cho phép scroll */
+        @media (max-width: 768px) {
+            .custom-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+            .custom-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        }
+
+        .delete-btn {
+            position: relative;
+            z-index: 50;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        .emoji-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body class="pb-10">
+
+    <!-- Login Screen -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
+        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-pink-50">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <span class="text-white text-3xl">❤️</span>
+                </div>
+                <h1 class="text-2xl font-bold text-slate-800">Our Feelings</h1>
+                <p class="text-slate-500 text-sm mt-1">Nhập tên để kết nối với người tình</p>
+            </div>
+            <input type="text" id="username-input" placeholder="Tên của bạn (VD: Gấu Nhỏ...)" 
+                class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4">
+            <button onclick="handleLogin()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95">
+                Bắt đầu ngay
+            </button>
+        </div>
+    </div>
+
+    <!-- Main App Screen -->
+    <div id="app-screen" class="hidden max-w-lg mx-auto p-4">
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800"> Our Feelings</h2>
+                <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
+            </div>
+            <button onclick="copyLink()" class="p-3 bg-white rounded-full shadow-sm border border-slate-100 hover:bg-slate-50 transition-all">
+                <span class="text-lg">🔗</span>
+            </button>
+        </header>
+
+        <div class="jar-cap"></div>
+        <div class="jar-container" id="jar-content">
+            <!-- Items injected here -->
+        </div>
+
+        <!-- Emoji Bar với Scrollbar và 3 emoji mới -->
+        <div class="mt-6 bg-white/60 rounded-3xl shadow-sm border border-white">
+            <div class="flex overflow-x-auto gap-4 p-4 custom-scrollbar">
+                <button onclick="sendEmotion('😊', 'happy')" class="flex-shrink-0 w-12 h-12 rounded-full ball-happy flex items-center justify-center text-xl shadow-md active:scale-90">😊</button>
+                <button onclick="sendEmotion('❤️', 'heart')" class="flex-shrink-0 w-12 h-12 rounded-full ball-heart flex items-center justify-center text-xl shadow-md active:scale-90">❤️</button>
+                <button onclick="sendEmotion('💗', 'pinkheart')" class="flex-shrink-0 w-12 h-12 rounded-full ball-pinkheart flex items-center justify-center text-xl shadow-md active:scale-90">💗</button>
+                <button onclick="sendEmotion('🥰', 'lovely')" class="flex-shrink-0 w-12 h-12 rounded-full ball-lovely flex items-center justify-center text-xl shadow-md active:scale-90">🥰</button>
+                <button onclick="sendEmotion('😘', 'kiss')" class="flex-shrink-0 w-12 h-12 rounded-full ball-kiss flex items-center justify-center text-xl shadow-md active:scale-90">😘</button>
+                <button onclick="sendEmotion('😏', 'smirk')" class="flex-shrink-0 w-12 h-12 rounded-full ball-smirk flex items-center justify-center text-xl shadow-md active:scale-90">😏</button>
+                <button onclick="sendEmotion('🤡', 'clown')" class="flex-shrink-0 w-12 h-12 rounded-full ball-clown flex items-center justify-center text-xl shadow-md active:scale-90">🤡</button>
+                <button onclick="sendEmotion('💩', 'poop')" class="flex-shrink-0 w-12 h-12 rounded-full ball-poop flex items-center justify-center text-xl shadow-md active:scale-90">💩</button>
+                <button onclick="sendEmotion('😭', 'cry')" class="flex-shrink-0 w-12 h-12 rounded-full ball-cry flex items-center justify-center text-xl shadow-md active:scale-90">😭</button>
+                <button onclick="sendEmotion('😢', 'sad')" class="flex-shrink-0 w-12 h-12 rounded-full ball-sad flex items-center justify-center text-xl shadow-md active:scale-90">😢</button>
+                <button onclick="sendEmotion('🐽', 'pig')" class="flex-shrink-0 w-12 h-12 rounded-full ball-pig flex items-center justify-center text-xl shadow-md active:scale-90">🐽</button>
+                <button onclick="sendEmotion('🌚', 'sparkle')" class="flex-shrink-0 w-12 h-12 rounded-full ball-sparkle flex items-center justify-center text-xl shadow-md active:scale-90">🌚</button>
+                <button onclick="sendEmotion('😴', 'tired')" class="flex-shrink-0 w-12 h-12 rounded-full ball-tired flex items-center justify-center text-xl shadow-md active:scale-90">😴</button>
+                <button onclick="sendEmotion('😎', 'cool')" class="flex-shrink-0 w-12 h-12 rounded-full ball-cool flex items-center justify-center text-xl shadow-md active:scale-90">😎</button>
+                <button onclick="sendEmotion('😡', 'angry')" class="flex-shrink-0 w-12 h-12 rounded-full ball-angry flex items-center justify-center text-xl shadow-md active:scale-90">😡</button>
+            </div>
+        </div>
+
+        <!-- Note Input -->
+        <div class="mt-6 bg-white rounded-3xl p-4 shadow-lg border border-slate-50">
+            <textarea id="note-input" class="w-full bg-transparent border-none focus:ring-0 text-slate-700 placeholder-slate-300 min-h-[80px] text-sm resize-none" placeholder="Bạn muốn nhắn gì cho người ấy?"></textarea>
+            <div class="flex justify-end mt-2 pt-2 border-t border-slate-50">
+                <button onclick="sendNote()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full text-xs font-bold shadow-md active:scale-95">
+                    Gửi lời nhắn 💌
+                </button>
+            </div>
+        </div>
+
+        <!-- Feeds -->
+        <div class="mt-8">
+            <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2">Nhật ký cảm xúc và lời nhắn</h3>
+            <div id="activity-feed" class="space-y-3 pb-20"></div>
+        </div>
+    </div>
+
+    <!-- Letter Modal -->
+    <div id="note-modal" class="modal" onclick="closeModal()">
+        <div class="letter" onclick="event.stopPropagation()">
+            <div id="modal-meta" class="text-[10px] text-slate-400 font-sans font-bold uppercase mb-4"></div>
+            <p id="modal-text" class="text-xl text-slate-700 leading-relaxed"></p>
+            <div class="mt-8 pt-4 border-t border-yellow-100 text-right">
+                <span class="text-pink-400">❤️❤️❤️</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity z-[200] pointer-events-none"></div>
+
+    <script>
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'crystal-jar-lover-v3';
+
+        let currentUser = null;
+        let userName = localStorage.getItem('jar_user_name') || '';
+        let lastItemCount = 0;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playCrystalSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function playPaperSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'bandpass';
+            noiseFilter.frequency.value = 1000;
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            noise.connect(noiseFilter);
+            noiseFilter.connect(noiseGain);
+            noiseGain.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        async function init() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await auth.signInAnonymously();
+                }
+            } catch (e) { console.error(e); }
+
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    currentUser = user;
+                    if (userName) showApp();
+                }
+            });
+        }
+
+        function handleLogin() {
+            const input = document.getElementById('username-input');
+            const name = input.value.trim();
+            if (!name) return;
+            userName = name;
+            localStorage.setItem('jar_user_name', name);
+            showApp();
+        }
+
+        function showApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
+            startListening();
+        }
+
+        function startListening() {
+            const path = `/artifacts/${appId}/public/data`;
+            db.collection(`${path}/emotions`).orderBy('time', 'desc').onSnapshot(() => renderJar(true));
+            db.collection(`${path}/notes`).orderBy('time', 'desc').onSnapshot(() => renderJar(true));
+        }
+
+        const emotionLabels = {
+            'happy': 'Cảm thấy dui vô cùng',
+            'sad': 'Cảm thấy buồn thí mẹ',
+            'heart': 'Cảm thấy Yêu vaio',
+            'kiss': 'Cảm thấy muốn hôn cưng',
+            'tired': 'Cảm thấy Mệt mỏi',
+            'cool': 'Cảm thấy Ngầu vá',
+            'angry': 'Cảm thấy Giận dữ vá đi',
+            'pinkheart': 'Cảm thấy Rất yêu ó',
+            'lovely': 'Cảm thấy nhớ iu',
+            'cry': 'Cảm thấy mít ướt',
+            'pig': 'Cảm thấy Lười biếng',
+            'sparkle': 'Cảm thấy Đen tối',
+            'smirk': 'Cảm thấy Cười khẩy',
+            'clown': 'Cảm thấy hề cốt',
+            'poop': 'Cảm thấy như cục sếch'
+        };
+
+        async function renderJar(shouldPlaySound = false) {
+            const path = `/artifacts/${appId}/public/data`;
+            
+            const emotionsSnap = await db.collection(`${path}/emotions`).get();
+            const notesSnap = await db.collection(`${path}/notes`).get();
+            
+            const jar = document.getElementById('jar-content');
+            const feed = document.getElementById('activity-feed');
+            
+            const allActivities = [
+                ...emotionsSnap.docs.map(d => ({id: d.id, ...d.data(), kind: 'emotion'})),
+                ...notesSnap.docs.map(d => ({id: d.id, ...d.data(), kind: 'note'}))
+            ].sort((a,b) => b.time - a.time);
+
+            if (shouldPlaySound && allActivities.length > lastItemCount && lastItemCount !== 0) {
+                const latest = allActivities[0];
+                if (latest.kind === 'emotion') playCrystalSound();
+                else playPaperSound();
+            }
+            lastItemCount = allActivities.length;
+
+            jar.innerHTML = '';
+            feed.innerHTML = '';
+
+            allActivities.slice(0, 60).forEach(item => {
+                if (item.kind === 'emotion') {
+                    const el = document.createElement('div');
+                    el.className = `ball ball-${item.type}`;
+                    el.textContent = item.emoji;
+                    el.style.left = `${item.posX}px`;
+                    el.style.bottom = `${item.posY}px`;
+                    el.style.setProperty('--r', `${item.rotation}deg`);
+                    jar.appendChild(el);
+                } else {
+                    const el = document.createElement('div');
+                    el.className = `note-paper`;
+                    el.style.left = `${item.posX}px`;
+                    el.style.bottom = `${item.posY}px`;
+                    el.style.setProperty('--r', `${item.rotation}deg`);
+                    el.onclick = () => openNote(item);
+                    jar.appendChild(el);
+                }
+            });
+
+            allActivities.slice(0, 20).forEach(item => {
+                const isOwner = currentUser && item.uid === currentUser.uid;
+                const div = document.createElement('div');
+                div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm relative group mb-2';
+                
+                let contentPart = '';
+                if (item.kind === 'emotion') {
+                    const label = emotionLabels[item.type] || 'Cảm xúc';
+                    contentPart = `
+                        <div class="flex items-center gap-3">
+                            <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
+                            <div>
+                                <p class="font-bold text-slate-700">${item.sender}</p>
+                                <p class="text-slate-400 text-[9px] uppercase font-bold tracking-tighter">${label}</p>
+                            </div>
+                        </div>`;
+                } else {
+                    const noteData = JSON.stringify(item).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+                    contentPart = `
+                        <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="openNoteFromFeed('${noteData}')">
+                            <div class="emoji-badge bg-yellow-50 text-yellow-600 border border-yellow-100">💌</div>
+                            <div>
+                                <p class="font-bold text-slate-700">${item.sender}</p>
+                                <p class="text-slate-400 text-[9px] uppercase font-bold tracking-tighter">Đã gửi một lá thư</p>
+                            </div>
+                        </div>`;
+                }
+
+                const actionsPart = `
+                    <div class="flex items-center gap-3 ml-2">
+                        <span class="text-[9px] text-slate-300 font-bold whitespace-nowrap">${new Date(item.time).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</span>
+                        ${isOwner ? `
+                        <button 
+                            onclick="handleDeleteItem(event, '${item.id}', '${item.kind}')" 
+                            class="delete-btn w-10 h-10 -mr-2 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all active:scale-90"
+                            title="Xóa"
+                        >
+                            <span class="text-xl font-bold">×</span>
+                        </button>` : ''}
+                    </div>
+                `;
+
+                div.innerHTML = contentPart + actionsPart;
+                feed.appendChild(div);
+            });
+        }
+
+        function handleDeleteItem(event, id, kind) {
+            event.preventDefault();
+            event.stopPropagation();
+            deleteItem(id, kind);
+        }
+
+        function openNoteFromFeed(jsonStr) {
+            try {
+                const note = JSON.parse(jsonStr.replace(/&quot;/g, '"').replace(/&apos;/g, "'"));
+                openNote(note);
+            } catch(e) { console.error("Error opening note", e); }
+        }
+
+        async function deleteItem(id, kind) {
+            if (!confirm("Xóa kỷ niệm này?")) return;
+            try {
+                const collectionName = kind === 'emotion' ? 'emotions' : 'notes';
+                const path = `/artifacts/${appId}/public/data/${collectionName}`;
+                await db.collection(path).doc(id).delete();
+                showToast("Đã xóa xong ✨");
+            } catch (e) { showToast("Lỗi khi xóa!"); }
+        }
+
+        async function sendEmotion(emoji, type) {
+            if (!currentUser) return;
+            playCrystalSound();
+            const path = `/artifacts/${appId}/public/data/emotions`;
+            await db.collection(path).add({
+                emoji, type, sender: userName, 
+                posX: Math.random() * 200 + 20, posY: Math.random() * 30,
+                rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
+            });
+            showToast(`Đã thả ${emoji}!`);
+        }
+
+        async function sendNote() {
+            const input = document.getElementById('note-input');
+            const text = input.value.trim();
+            if (!text || !currentUser) return;
+            playPaperSound();
+            const path = `/artifacts/${appId}/public/data/notes`;
+            await db.collection(path).add({
+                text, sender: userName,
+                posX: Math.random() * 200 + 20, posY: Math.random() * 200 + 20,
+                rotation: Math.random() * 60 - 30, time: Date.now(), uid: currentUser.uid
+            });
+            input.value = '';
+            showToast("Gửi lời nhắn thành công 💌");
+        }
+
+        function openNote(note) {
+            document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • GỬI BỞI: ${note.sender}`;
+            document.getElementById('modal-text').textContent = note.text;
+            document.getElementById('note-modal').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('note-modal').style.display = 'none'; }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.opacity = '1';
+            setTimeout(() => t.style.opacity = '0', 3000);
+        }
+
+        function copyLink() {
+            const dummy = document.createElement('input'), text = window.location.href;
+            document.body.appendChild(dummy); dummy.value = text; dummy.select();
+            document.execCommand('copy'); document.body.removeChild(dummy);
+            showToast("Đã sao chép link! ❤️");
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
