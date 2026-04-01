@@ -258,15 +258,26 @@
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity z-[200] pointer-events-none"></div>
 
     <script>
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'crystal-jar-lover-v3';
+        const firebaseConfig = {
+  apiKey: "AIzaSyB8tJFf26QZfNjDgZwP8zPlBPYZuqMwI3M",
+  authDomain: "feelings-11f29.firebaseapp.com",
+  projectId: "feelings-11f29",
+  storageBucket: "feelings-11f29.firebasestorage.app",
+  messagingSenderId: "160485524876",
+  appId: "1:160485524876:web:5476b22eede288f2c082a9"
+};
 
-        let currentUser = null;
-        let userName = localStorage.getItem('jar_user_name') || '';
-        let lastItemCount = 0;
+// Khởi tạo Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Đặt ID cố định cho ứng dụng này
+const appId = "feelings-app-v1"; 
+
+let currentUser = null;
+let userName = localStorage.getItem('jar_user_name') || '';
+let lastItemCount = 0;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
@@ -305,22 +316,21 @@
             noise.start();
         }
 
-        async function init() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await auth.signInWithCustomToken(__initial_auth_token);
-                } else {
-                    await auth.signInAnonymously();
-                }
-            } catch (e) { console.error(e); }
+       async function init() {
+    try {
+        // Đăng nhập ẩn danh để có quyền đọc/ghi vào Firestore
+        await auth.signInAnonymously();
+    } catch (e) { 
+        console.error("Lỗi đăng nhập:", e); 
+    }
 
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    currentUser = user;
-                    if (userName) showApp();
-                }
-            });
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            if (userName) showApp();
         }
+    });
+}
 
         function handleLogin() {
             const input = document.getElementById('username-input');
@@ -339,7 +349,7 @@
         }
 
         function startListening() {
-            const path = `/artifacts/${appId}/public/data`;
+            const path = "feelings_data";
             db.collection(`${path}/emotions`).orderBy('time', 'desc').onSnapshot(() => renderJar(true));
             db.collection(`${path}/notes`).orderBy('time', 'desc').onSnapshot(() => renderJar(true));
         }
@@ -363,7 +373,7 @@
         };
 
         async function renderJar(shouldPlaySound = false) {
-            const path = `/artifacts/${appId}/public/data`;
+            const path = "feelings_data";
             
             const emotionsSnap = await db.collection(`${path}/emotions`).get();
             const notesSnap = await db.collection(`${path}/notes`).get();
@@ -470,7 +480,7 @@
             if (!confirm("Xóa kỷ niệm này?")) return;
             try {
                 const collectionName = kind === 'emotion' ? 'emotions' : 'notes';
-                const path = `/artifacts/${appId}/public/data/${collectionName}`;
+                const path = "feelings_data";
                 await db.collection(path).doc(id).delete();
                 showToast("Đã xóa xong ✨");
             } catch (e) { showToast("Lỗi khi xóa!"); }
@@ -479,7 +489,7 @@
         async function sendEmotion(emoji, type) {
             if (!currentUser) return;
             playCrystalSound();
-            const path = `/artifacts/${appId}/public/data/emotions`;
+            const path = "feelings_data";
             await db.collection(path).add({
                 emoji, type, sender: userName, 
                 posX: Math.random() * 200 + 20, posY: Math.random() * 30,
@@ -493,7 +503,7 @@
             const text = input.value.trim();
             if (!text || !currentUser) return;
             playPaperSound();
-            const path = `/artifacts/${appId}/public/data/notes`;
+            const path = "feelings_data";
             await db.collection(path).add({
                 text, sender: userName,
                 posX: Math.random() * 200 + 20, posY: Math.random() * 200 + 20,
