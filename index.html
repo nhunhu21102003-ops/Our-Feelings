@@ -440,6 +440,21 @@ async function renderJar(snapshot, shouldPlaySound = false) {
         div.appendChild(actionWrapper);
         feed.appendChild(div);
     });
+    // --- LOGIC ĐỔI MÀU HŨ (Dán vào cuối hàm renderJar) ---
+        const allItems = snapshot.docs.map(d => d.data());
+        const angryCount = allItems.filter(item => item.type === 'angry').length;
+        const jarEl = document.getElementById('jar-content');
+
+        if (angryCount >= 3) {
+            // Nếu có từ 3 icon Giận trở lên -> Hũ chuyển sang màu đỏ cảnh báo
+            jarEl.style.background = "rgba(254, 226, 226, 0.6)"; 
+            jarEl.style.borderColor = "#fca5a5";
+            jarEl.style.transition = "all 0.5s ease"; // Hiệu ứng đổi màu mượt mà
+        } else {
+            // Ít hơn 3 icon Giận -> Quay về màu trắng kính mờ mặc định
+            jarEl.style.background = "rgba(255, 255, 255, 0.2)";
+            jarEl.style.borderColor = "rgba(255, 255, 255, 0.8)";
+        }
 }
 
 async function deleteItem(id) {
