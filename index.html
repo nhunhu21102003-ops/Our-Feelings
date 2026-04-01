@@ -258,13 +258,13 @@
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full text-xs font-bold shadow-2xl opacity-0 transition-opacity z-[200] pointer-events-none"></div>
 
     <script>
-        const firebaseConfig = {
-  apiKey: "AIzaSyB8tJFf26QZfNjDgZwP8zPlBPYZuqMwI3M",
-  authDomain: "feelings-11f29.firebaseapp.com",
-  projectId: "feelings-11f29",
-  storageBucket: "feelings-11f29.firebasestorage.app",
-  messagingSenderId: "160485524876",
-  appId: "1:160485524876:web:5476b22eede288f2c082a9"
+       const firebaseConfig = {
+    apiKey: "AIzaSyB8tJFf26QZfNjDgZwP8zPlBPYZuqMwI3M",
+    authDomain: "feelings-11f29.firebaseapp.com",
+    projectId: "feelings-11f29",
+    storageBucket: "feelings-11f29.firebasestorage.app",
+    messagingSenderId: "160485524876",
+    appId: "1:160485524876:web:5476b22eede288f2c082a9"
 };
 
 // Khởi tạo Firebase
@@ -272,57 +272,42 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Đặt ID cố định cho ứng dụng này
-const appId = "feelings-app-v1"; 
-
 let currentUser = null;
 let userName = localStorage.getItem('jar_user_name') || '';
 let lastItemCount = 0;
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playCrystalSound() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.4);
-        }
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        function playPaperSound() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const bufferSize = audioCtx.sampleRate * 0.1;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
-            const noiseFilter = audioCtx.createBiquadFilter();
-            noiseFilter.type = 'bandpass';
-            noiseFilter.frequency.value = 1000;
-            const noiseGain = audioCtx.createGain();
-            noiseGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            noise.connect(noiseFilter);
-            noiseFilter.connect(noiseGain);
-            noiseGain.connect(audioCtx.destination);
-            noise.start();
-        }
+// --- ÂM THANH ---
+function playCrystalSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+}
 
-       async function init() {
+function playPaperSound() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+}
+
+// --- LOGIC CHÍNH ---
+async function init() {
     try {
-        // Đăng nhập ẩn danh để có quyền đọc/ghi vào Firestore
         await auth.signInAnonymously();
-    } catch (e) { 
-        console.error("Lỗi đăng nhập:", e); 
-    }
+    } catch (e) { console.error("Lỗi đăng nhập:", e); }
 
     auth.onAuthStateChanged(user => {
         if (user) {
@@ -332,209 +317,148 @@ let lastItemCount = 0;
     });
 }
 
-        function handleLogin() {
-            const input = document.getElementById('username-input');
-            const name = input.value.trim();
-            if (!name) return;
-            userName = name;
-            localStorage.setItem('jar_user_name', name);
-            showApp();
+function handleLogin() {
+    const input = document.getElementById('username-input');
+    const name = input.value.trim();
+    if (!name) return;
+    userName = name;
+    localStorage.setItem('jar_user_name', name);
+    showApp();
+}
+
+function showApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
+    startListening();
+}
+
+// Lắng nghe dữ liệu từ 1 collection duy nhất để tránh lỗi
+function startListening() {
+    db.collection("feelings_data").orderBy('time', 'desc').onSnapshot(snapshot => {
+        renderJar(snapshot, true);
+    });
+}
+
+const emotionLabels = {
+    'happy': 'Cảm thấy dui vô cùng', 'sad': 'Cảm thấy buồn thí mẹ',
+    'heart': 'Cảm thấy Yêu vaio', 'kiss': 'Cảm thấy muốn hôn cưng',
+    'tired': 'Cảm thấy Mệt mỏi', 'cool': 'Cảm thấy Ngầu vá',
+    'angry': 'Cảm thấy Giận dữ vá đi', 'pinkheart': 'Cảm thấy Rất yêu ó',
+    'lovely': 'Cảm thấy nhớ iu', 'cry': 'Cảm thấy mít ướt',
+    'pig': 'Cảm thấy Lười biếng', 'sparkle': 'Cảm thấy Đen tối',
+    'smirk': 'Cảm thấy Cười khẩy', 'clown': 'Cảm thấy hề cốt', 'poop': 'Cảm thấy như cục sếch'
+};
+
+async function renderJar(snapshot, shouldPlaySound = false) {
+    const jar = document.getElementById('jar-content');
+    const feed = document.getElementById('activity-feed');
+    
+    const allActivities = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+
+    if (shouldPlaySound && allActivities.length > lastItemCount && lastItemCount !== 0) {
+        const latest = allActivities[0];
+        latest.type ? playCrystalSound() : playPaperSound();
+    }
+    lastItemCount = allActivities.length;
+
+    jar.innerHTML = '';
+    feed.innerHTML = '';
+
+    allActivities.forEach(item => {
+        // Vẽ vào hũ
+        const el = document.createElement('div');
+        if (item.type) { // Đây là emotion
+            el.className = `ball ball-${item.type}`;
+            el.textContent = item.emoji;
+        } else { // Đây là note
+            el.className = `note-paper`;
+            el.onclick = () => openNote(item);
+        }
+        el.style.left = `${item.posX}px`;
+        el.style.bottom = `${item.posY}px`;
+        el.style.setProperty('--r', `${item.rotation}deg`);
+        jar.appendChild(el);
+
+        // Vẽ vào Feed nhật ký
+        const isOwner = currentUser && item.uid === currentUser.uid;
+        const div = document.createElement('div');
+        div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2';
+        
+        let content = '';
+        if (item.type) {
+            content = `
+                <div class="flex items-center gap-3">
+                    <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
+                    <div><p class="font-bold text-slate-700">${item.sender}</p><p class="text-slate-400 text-[9px] font-bold">${emotionLabels[item.type] || 'Cảm xúc'}</p></div>
+                </div>`;
+        } else {
+            content = `
+                <div class="flex items-center gap-3 cursor-pointer flex-1" onclick='openNote(${JSON.stringify(item)})'>
+                    <div class="emoji-badge bg-yellow-50 text-yellow-600">💌</div>
+                    <div><p class="font-bold text-slate-700">${item.sender}</p><p class="text-slate-400 text-[9px] font-bold">Đã gửi thư</p></div>
+                </div>`;
         }
 
-        function showApp() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
-            startListening();
-        }
+        const action = `
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] text-slate-300">${new Date(item.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}</span>
+                ${isOwner ? `<button onclick="deleteItem('${item.id}')" class="text-red-400 font-bold text-lg px-2">×</button>` : ''}
+            </div>`;
+        
+        div.innerHTML = content + action;
+        feed.appendChild(div);
+    });
+}
 
-        function startListening() {
-            const path = "feelings_data";
-            db.collection(`${path}/emotions`).orderBy('time', 'desc').onSnapshot(() => renderJar(true));
-            db.collection(`${path}/notes`).orderBy('time', 'desc').onSnapshot(() => renderJar(true));
-        }
+async function deleteItem(id) {
+    if (confirm("Xóa kỷ niệm này?")) {
+        await db.collection("feelings_data").doc(id).delete();
+        showToast("Đã xóa ✨");
+    }
+}
 
-        const emotionLabels = {
-            'happy': 'Cảm thấy dui vô cùng',
-            'sad': 'Cảm thấy buồn thí mẹ',
-            'heart': 'Cảm thấy Yêu vaio',
-            'kiss': 'Cảm thấy muốn hôn cưng',
-            'tired': 'Cảm thấy Mệt mỏi',
-            'cool': 'Cảm thấy Ngầu vá',
-            'angry': 'Cảm thấy Giận dữ vá đi',
-            'pinkheart': 'Cảm thấy Rất yêu ó',
-            'lovely': 'Cảm thấy nhớ iu',
-            'cry': 'Cảm thấy mít ướt',
-            'pig': 'Cảm thấy Lười biếng',
-            'sparkle': 'Cảm thấy Đen tối',
-            'smirk': 'Cảm thấy Cười khẩy',
-            'clown': 'Cảm thấy hề cốt',
-            'poop': 'Cảm thấy như cục sếch'
-        };
+async function sendEmotion(emoji, type) {
+    if (!currentUser) return;
+    await db.collection("feelings_data").add({
+        emoji, type, sender: userName, 
+        posX: Math.random() * 200 + 20, posY: Math.random() * 30,
+        rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
+    });
+    showToast(`Đã thả ${emoji}!`);
+}
 
-        async function renderJar(shouldPlaySound = false) {
-            const path = "feelings_data";
-            
-            const emotionsSnap = await db.collection(`${path}/emotions`).get();
-            const notesSnap = await db.collection(`${path}/notes`).get();
-            
-            const jar = document.getElementById('jar-content');
-            const feed = document.getElementById('activity-feed');
-            
-            const allActivities = [
-                ...emotionsSnap.docs.map(d => ({id: d.id, ...d.data(), kind: 'emotion'})),
-                ...notesSnap.docs.map(d => ({id: d.id, ...d.data(), kind: 'note'}))
-            ].sort((a,b) => b.time - a.time);
+async function sendNote() {
+    const input = document.getElementById('note-input');
+    const text = input.value.trim();
+    if (!text || !currentUser) return;
+    await db.collection("feelings_data").add({
+        text, sender: userName,
+        posX: Math.random() * 200 + 20, posY: Math.random() * 50 + 20,
+        rotation: Math.random() * 60 - 30, time: Date.now(), uid: currentUser.uid
+    });
+    input.value = '';
+    showToast("Gửi lời nhắn thành công 💌");
+}
 
-            if (shouldPlaySound && allActivities.length > lastItemCount && lastItemCount !== 0) {
-                const latest = allActivities[0];
-                if (latest.kind === 'emotion') playCrystalSound();
-                else playPaperSound();
-            }
-            lastItemCount = allActivities.length;
+function openNote(note) {
+    document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • TỪ: ${note.sender}`;
+    document.getElementById('modal-text').textContent = note.text;
+    document.getElementById('note-modal').style.display = 'flex';
+}
 
-            jar.innerHTML = '';
-            feed.innerHTML = '';
+function closeModal() { document.getElementById('note-modal').style.display = 'none'; }
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.style.opacity = '1';
+    setTimeout(() => t.style.opacity = '0', 3000);
+}
+function copyLink() {
+    navigator.clipboard.writeText(window.location.href);
+    showToast("Đã sao chép link! ❤️");
+}
 
-            allActivities.slice(0, 60).forEach(item => {
-                if (item.kind === 'emotion') {
-                    const el = document.createElement('div');
-                    el.className = `ball ball-${item.type}`;
-                    el.textContent = item.emoji;
-                    el.style.left = `${item.posX}px`;
-                    el.style.bottom = `${item.posY}px`;
-                    el.style.setProperty('--r', `${item.rotation}deg`);
-                    jar.appendChild(el);
-                } else {
-                    const el = document.createElement('div');
-                    el.className = `note-paper`;
-                    el.style.left = `${item.posX}px`;
-                    el.style.bottom = `${item.posY}px`;
-                    el.style.setProperty('--r', `${item.rotation}deg`);
-                    el.onclick = () => openNote(item);
-                    jar.appendChild(el);
-                }
-            });
-
-            allActivities.slice(0, 20).forEach(item => {
-                const isOwner = currentUser && item.uid === currentUser.uid;
-                const div = document.createElement('div');
-                div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm relative group mb-2';
-                
-                let contentPart = '';
-                if (item.kind === 'emotion') {
-                    const label = emotionLabels[item.type] || 'Cảm xúc';
-                    contentPart = `
-                        <div class="flex items-center gap-3">
-                            <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
-                            <div>
-                                <p class="font-bold text-slate-700">${item.sender}</p>
-                                <p class="text-slate-400 text-[9px] uppercase font-bold tracking-tighter">${label}</p>
-                            </div>
-                        </div>`;
-                } else {
-                    const noteData = JSON.stringify(item).replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-                    contentPart = `
-                        <div class="flex items-center gap-3 cursor-pointer flex-1" onclick="openNoteFromFeed('${noteData}')">
-                            <div class="emoji-badge bg-yellow-50 text-yellow-600 border border-yellow-100">💌</div>
-                            <div>
-                                <p class="font-bold text-slate-700">${item.sender}</p>
-                                <p class="text-slate-400 text-[9px] uppercase font-bold tracking-tighter">Đã gửi một lá thư</p>
-                            </div>
-                        </div>`;
-                }
-
-                const actionsPart = `
-                    <div class="flex items-center gap-3 ml-2">
-                        <span class="text-[9px] text-slate-300 font-bold whitespace-nowrap">${new Date(item.time).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'})}</span>
-                        ${isOwner ? `
-                        <button 
-                            onclick="handleDeleteItem(event, '${item.id}', '${item.kind}')" 
-                            class="delete-btn w-10 h-10 -mr-2 flex items-center justify-center bg-red-50 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-all active:scale-90"
-                            title="Xóa"
-                        >
-                            <span class="text-xl font-bold">×</span>
-                        </button>` : ''}
-                    </div>
-                `;
-
-                div.innerHTML = contentPart + actionsPart;
-                feed.appendChild(div);
-            });
-        }
-
-        function handleDeleteItem(event, id, kind) {
-            event.preventDefault();
-            event.stopPropagation();
-            deleteItem(id, kind);
-        }
-
-        function openNoteFromFeed(jsonStr) {
-            try {
-                const note = JSON.parse(jsonStr.replace(/&quot;/g, '"').replace(/&apos;/g, "'"));
-                openNote(note);
-            } catch(e) { console.error("Error opening note", e); }
-        }
-
-        async function deleteItem(id, kind) {
-            if (!confirm("Xóa kỷ niệm này?")) return;
-            try {
-                const collectionName = kind === 'emotion' ? 'emotions' : 'notes';
-                const path = "feelings_data";
-                await db.collection(path).doc(id).delete();
-                showToast("Đã xóa xong ✨");
-            } catch (e) { showToast("Lỗi khi xóa!"); }
-        }
-
-        async function sendEmotion(emoji, type) {
-            if (!currentUser) return;
-            playCrystalSound();
-            const path = "feelings_data";
-            await db.collection(path).add({
-                emoji, type, sender: userName, 
-                posX: Math.random() * 200 + 20, posY: Math.random() * 30,
-                rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
-            });
-            showToast(`Đã thả ${emoji}!`);
-        }
-
-        async function sendNote() {
-            const input = document.getElementById('note-input');
-            const text = input.value.trim();
-            if (!text || !currentUser) return;
-            playPaperSound();
-            const path = "feelings_data";
-            await db.collection(path).add({
-                text, sender: userName,
-                posX: Math.random() * 200 + 20, posY: Math.random() * 200 + 20,
-                rotation: Math.random() * 60 - 30, time: Date.now(), uid: currentUser.uid
-            });
-            input.value = '';
-            showToast("Gửi lời nhắn thành công 💌");
-        }
-
-        function openNote(note) {
-            document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • GỬI BỞI: ${note.sender}`;
-            document.getElementById('modal-text').textContent = note.text;
-            document.getElementById('note-modal').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('note-modal').style.display = 'none'; }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg; t.style.opacity = '1';
-            setTimeout(() => t.style.opacity = '0', 3000);
-        }
-
-        function copyLink() {
-            const dummy = document.createElement('input'), text = window.location.href;
-            document.body.appendChild(dummy); dummy.value = text; dummy.select();
-            document.execCommand('copy'); document.body.removeChild(dummy);
-            showToast("Đã sao chép link! ❤️");
-        }
-
-        window.onload = init;
+window.onload = init;
     </script>
 </body>
 </html>
