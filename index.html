@@ -96,6 +96,7 @@
             position: relative;
         }
 
+        /* Colors for balls */
         .ball-happy { background: radial-gradient(circle at 35% 35%, #86efac, #22c55e); }
         .ball-sad { background: radial-gradient(circle at 35% 35%, #93c5fd, #3b82f6); }
         .ball-angry { background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444); }
@@ -139,8 +140,8 @@
                 <h1 class="text-2xl font-bold text-slate-800">Our Feelings</h1>
                 <p class="text-slate-500 text-sm mt-1">Nhập tên để kết nối với người tình</p>
             </div>
-            <input type="text" id="username-input" placeholder="Tên của bạn (VD: Gấu Nhỏ...)" 
-                class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4">
+            <input type="text" id="username-input" placeholder="Tên của bạn..." 
+                class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4 text-center">
             <button onclick="handleLogin()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95">
                 Bắt đầu ngay
             </button>
@@ -150,7 +151,7 @@
     <div id="app-screen" class="hidden max-w-lg mx-auto p-4">
         <header class="flex justify-between items-center mb-6">
             <div>
-                <h2 class="text-xl font-bold text-slate-800"> Our Feelings</h2>
+                <h2 class="text-xl font-bold text-slate-800">Our Feelings</h2>
                 <div class="flex items-center gap-2">
                     <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
                     <button onclick="openRenameModal()" class="text-[10px] bg-pink-100 text-pink-600 px-2 py-0.5 rounded-full hover:bg-pink-200">
@@ -215,16 +216,10 @@
     <div id="delete-modal" class="modal" style="z-index: 300;">
         <div class="bg-pink-50 p-8 rounded-[40px] shadow-2xl border-4 border-white max-w-[300px] text-center">
             <div class="text-4xl mb-4">🥺</div>
-            <p class="text-slate-700 font-bold leading-relaxed mb-6">
-                Cưng muốn xóa kỉ niệm này đúng hông?
-            </p>
+            <p class="text-slate-700 font-bold leading-relaxed mb-6">Cưng muốn xóa kỉ niệm này đúng hông?</p>
             <div class="flex gap-3">
-                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-2xl bg-slate-200 text-slate-500 font-bold active:scale-95 transition-all">
-                    Hủy
-                </button>
-                <button id="confirm-delete-btn" class="flex-1 py-3 rounded-2xl bg-pink-400 text-white font-bold shadow-lg shadow-pink-200 active:scale-95 transition-all">
-                    Xóa luôn
-                </button>
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 rounded-2xl bg-slate-200 text-slate-500 font-bold active:scale-95 transition-all">Hủy</button>
+                <button id="confirm-delete-btn" class="flex-1 py-3 rounded-2xl bg-pink-400 text-white font-bold shadow-lg shadow-pink-200 active:scale-95 transition-all">Xóa luôn</button>
             </div>
         </div>
     </div>
@@ -233,7 +228,7 @@
         <div class="bg-white p-8 rounded-[40px] shadow-2xl border-4 border-pink-100 max-w-[300px] text-center">
             <div class="text-3xl mb-4">✨</div>
             <p class="text-slate-700 font-bold mb-4">Cưng muốn đổi tên thành gì?</p>
-            <input type="text" id="new-name-input" class="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4 text-center" placeholder="Tên mới...">
+            <input type="text" id="new-name-input" class="w-full px-4 py-3 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4 text-center">
             <div class="flex gap-3">
                 <button onclick="closeRenameModal()" class="flex-1 py-3 rounded-2xl bg-slate-100 text-slate-400 font-bold">Hủy</button>
                 <button onclick="saveNewName()" class="flex-1 py-3 rounded-2xl bg-pink-500 text-white font-bold shadow-lg">Lưu</button>
@@ -257,6 +252,41 @@
         const db = firebase.firestore();
         const auth = firebase.auth();
 
+        let currentUser = null;
+        let userName = localStorage.getItem('jar_user_name') || '';
+        let lastItemCount = 0;
+        let pendingDeleteId = null;
+        
+        // --- Âm thanh ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playPopSound(freq = 400, type = 'sine') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playPaperSound() {
+            const bufferSize = audioCtx.sampleRate * 0.1;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'highpass'; filter.frequency.value = 1000;
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+            noise.start();
+        }
+
         function updateLoveCounter() {
             const startDate = new Date('2024-05-16'); 
             const now = new Date();
@@ -264,13 +294,8 @@
             document.getElementById('love-counter').innerHTML = `Chúng mình đã bám nhau <span class="text-pink-500 font-bold">${diffDays}</span> ngày 💋`;
         }
 
-        let currentUser = null;
-        let userName = localStorage.getItem('jar_user_name') || '';
-        let lastItemCount = 0;
-        let pendingDeleteId = null;
-
         async function init() {
-            try { await auth.signInAnonymously(); } catch (e) { console.error("Lỗi đăng nhập:", e); }
+            try { await auth.signInAnonymously(); } catch (e) { console.error(e); }
             auth.onAuthStateChanged(user => {
                 if (user) {
                     currentUser = user;
@@ -280,8 +305,7 @@
         }
 
         function handleLogin() {
-            const input = document.getElementById('username-input');
-            const name = input.value.trim();
+            const name = document.getElementById('username-input').value.trim();
             if (!name) return;
             userName = name;
             localStorage.setItem('jar_user_name', name);
@@ -297,9 +321,7 @@
         }
 
         function startListening() {
-            db.collection("feelings_data").orderBy('time', 'desc').onSnapshot(snapshot => {
-                renderJar(snapshot);
-            });
+            db.collection("feelings_data").orderBy('time', 'desc').onSnapshot(renderJar);
         }
 
         const emotionLabels = {
@@ -316,19 +338,27 @@
             const jar = document.getElementById('jar-content');
             const feed = document.getElementById('activity-feed');
             const jarEl = document.getElementById('jar-content');
-            const allActivities = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+            const allItems = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+            
+            // Xử lý âm thanh ting ting khi có đồ mới
+            if (lastItemCount > 0 && allItems.length > lastItemCount) {
+                const newItem = allItems[0];
+                if (newItem.type) playPopSound(600, 'sine');
+                else playPaperSound();
+            }
+            lastItemCount = allItems.length;
 
             jar.innerHTML = '';
             feed.innerHTML = '';
 
-            allActivities.forEach(item => {
+            allItems.forEach(item => {
                 const el = document.createElement('div');
-                if (item.type) { 
+                if (item.type) {
                     el.className = `ball ball-${item.type}`;
                     el.textContent = item.emoji;
-                } else { 
+                } else {
                     el.className = `note-paper`;
-                    el.onclick = () => openNote(item);
+                    el.onclick = () => { playPaperSound(); openNote(item); };
                 }
                 el.style.left = `${item.posX}px`;
                 el.style.bottom = `${item.posY}px`;
@@ -336,56 +366,40 @@
                 jar.appendChild(el);
 
                 const div = document.createElement('div');
-                div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2 transition-all hover:shadow-md';
+                div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2';
                 
-                const contentWrapper = document.createElement('div');
-                contentWrapper.className = 'flex items-center gap-3 flex-1 cursor-pointer';
-                
-                if (item.type) {
-                    contentWrapper.innerHTML = `
-                        <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
-                        <div>
-                            <p class="font-bold text-slate-700">${item.sender}</p>
-                            <p class="text-slate-400 text-[9px] font-bold">${emotionLabels[item.type] || 'Cảm xúc'}</p>
-                        </div>`;
-                } else {
-                    contentWrapper.innerHTML = `
-                        <div class="emoji-badge bg-yellow-50 text-yellow-600">💌</div>
-                        <div>
-                            <p class="font-bold text-slate-700">${item.sender}</p>
-                            <p class="text-slate-400 text-[9px] font-bold">Đã gửi thư</p>
-                        </div>`;
-                    contentWrapper.onclick = () => openNote(item);
-                }
+                const content = document.createElement('div');
+                content.className = 'flex items-center gap-3 flex-1 cursor-pointer';
+                content.onclick = item.type ? null : () => { playPaperSound(); openNote(item); };
+                content.innerHTML = `
+                    <div class="emoji-badge ${item.type ? 'ball-'+item.type : 'bg-yellow-50 text-yellow-600'}">${item.emoji || '💌'}</div>
+                    <div>
+                        <p class="font-bold text-slate-700">${item.sender}</p>
+                        <p class="text-slate-400 text-[9px] font-bold">${item.type ? (emotionLabels[item.type] || 'Cảm xúc') : 'Đã gửi thư'}</p>
+                    </div>`;
 
-                const actionWrapper = document.createElement('div');
-                actionWrapper.className = 'flex items-center gap-2';
-                const isOwner = currentUser && item.uid === currentUser.uid;
+                const actions = document.createElement('div');
+                actions.className = 'flex items-center gap-2';
                 const timeStr = new Date(item.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
-                actionWrapper.innerHTML = `<span class="text-[9px] text-slate-300">${timeStr}</span>`;
-                
-                if (isOwner) {
+                actions.innerHTML = `<span class="text-[9px] text-slate-300">${timeStr}</span>`;
+
+                if (currentUser && item.uid === currentUser.uid) {
                     const delBtn = document.createElement('button');
-                    delBtn.className = 'text-red-400 font-bold text-lg px-2 hover:text-red-600 transition-colors';
+                    delBtn.className = 'text-red-400 font-bold text-lg px-2';
                     delBtn.innerHTML = '×';
-                    delBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        deleteItem(item.id);
-                    };
-                    actionWrapper.appendChild(delBtn);
+                    delBtn.onclick = (e) => { e.stopPropagation(); deleteItem(item.id); };
+                    actions.appendChild(delBtn);
                 }
 
-                div.appendChild(contentWrapper);
-                div.appendChild(actionWrapper);
+                div.appendChild(content);
+                div.appendChild(actions);
                 feed.appendChild(div);
             });
 
-            // Hiệu ứng đổi màu hũ khi giận
-            const angryCount = allActivities.filter(item => item.type === 'angry').length;
+            const angryCount = allItems.filter(i => i.type === 'angry').length;
             if (angryCount >= 3) {
                 jarEl.style.background = "rgba(254, 226, 226, 0.6)"; 
                 jarEl.style.borderColor = "#fca5a5";
-                jarEl.style.transition = "all 0.5s ease";
             } else {
                 jarEl.style.background = "rgba(255, 255, 255, 0.2)";
                 jarEl.style.borderColor = "rgba(255, 255, 255, 0.8)";
@@ -396,20 +410,19 @@
             pendingDeleteId = id;
             document.getElementById('delete-modal').style.display = 'flex';
             document.getElementById('confirm-delete-btn').onclick = async () => {
-                if (pendingDeleteId) {
-                    await db.collection("feelings_data").doc(pendingDeleteId).delete();
-                    showToast("Đã xóa ✨");
-                    closeDeleteModal();
-                }
+                await db.collection("feelings_data").doc(pendingDeleteId).delete();
+                closeDeleteModal();
+                showToast("Đã xóa ✨");
             };
         }
 
         function closeDeleteModal() { document.getElementById('delete-modal').style.display = 'none'; }
-
+        
         async function sendEmotion(emoji, type) {
             if (!currentUser) return;
+            playPopSound(500, 'sine');
             await db.collection("feelings_data").add({
-                emoji, type, sender: userName, 
+                emoji, type, sender: userName,
                 posX: Math.random() * 200 + 20, posY: Math.random() * 30,
                 rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
             });
@@ -420,6 +433,7 @@
             const input = document.getElementById('note-input');
             const text = input.value.trim();
             if (!text || !currentUser) return;
+            playPaperSound();
             await db.collection("feelings_data").add({
                 text, sender: userName,
                 posX: Math.random() * 200 + 20, posY: Math.random() * 50 + 20,
