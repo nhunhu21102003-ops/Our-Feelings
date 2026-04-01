@@ -195,6 +195,8 @@
             <div>
                 <h2 class="text-xl font-bold text-slate-800"> Our Feelings</h2>
                 <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
+                <p id="display-user" class="text-[10px] text-pink-500 font-bold uppercase tracking-widest"></p>
+<p id="love-counter" class="text-[12px] text-slate-400 font-medium mt-1 italic"></p>
             </div>
             <button onclick="copyLink()" class="p-3 bg-white rounded-full shadow-sm border border-slate-100 hover:bg-slate-50 transition-all">
                 <span class="text-lg">🔗</span>
@@ -271,6 +273,14 @@
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
+function updateLoveCounter() {
+    // Nhớ sửa ngày này thành ngày hai bạn bắt đầu yêu nhau (Năm-Tháng-Ngày)
+    const startDate = new Date('2024-05-16'); 
+    const now = new Date();
+    const diffTime = Math.abs(now - startDate);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    document.getElementById('love-counter').textContent = `Chúng mình đã bên nhau ${diffDays} ngày ❤️`;
+}
 
 let currentUser = null;
 let userName = localStorage.getItem('jar_user_name') || '';
@@ -330,6 +340,7 @@ function showApp() {
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
     document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
+    updateLoveCounter();
     startListening();
 }
 
@@ -366,12 +377,12 @@ async function renderJar(snapshot, shouldPlaySound = false) {
     feed.innerHTML = '';
 
     allActivities.forEach(item => {
-        // Vẽ vào hũ
+        // 1. Vẽ vào hũ thủy tinh
         const el = document.createElement('div');
-        if (item.type) { // Đây là emotion
+        if (item.type) { 
             el.className = `ball ball-${item.type}`;
             el.textContent = item.emoji;
-        } else { // Đây là note
+        } else { 
             el.className = `note-paper`;
             el.onclick = () => openNote(item);
         }
@@ -380,33 +391,53 @@ async function renderJar(snapshot, shouldPlaySound = false) {
         el.style.setProperty('--r', `${item.rotation}deg`);
         jar.appendChild(el);
 
-        // Vẽ vào Feed nhật ký
-        const isOwner = currentUser && item.uid === currentUser.uid;
+        // 2. Vẽ vào Nhật ký (Feed) - Phần này đã được cải tiến:
         const div = document.createElement('div');
-        div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2';
+        div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2 transition-all hover:shadow-md';
         
-        let content = '';
+        // Tạo vùng chứa nội dung (Click vào đây để xem chi tiết nếu là lời nhắn)
+        const contentWrapper = document.createElement('div');
+        contentWrapper.className = 'flex items-center gap-3 flex-1 cursor-pointer';
+        
         if (item.type) {
-            content = `
-                <div class="flex items-center gap-3">
-                    <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
-                    <div><p class="font-bold text-slate-700">${item.sender}</p><p class="text-slate-400 text-[9px] font-bold">${emotionLabels[item.type] || 'Cảm xúc'}</p></div>
+            contentWrapper.innerHTML = `
+                <div class="emoji-badge ball-${item.type}">${item.emoji}</div>
+                <div>
+                    <p class="font-bold text-slate-700">${item.sender}</p>
+                    <p class="text-slate-400 text-[9px] font-bold">${emotionLabels[item.type] || 'Cảm xúc'}</p>
                 </div>`;
         } else {
-            content = `
-                <div class="flex items-center gap-3 cursor-pointer flex-1" onclick='openNote(${JSON.stringify(item)})'>
-                    <div class="emoji-badge bg-yellow-50 text-yellow-600">💌</div>
-                    <div><p class="font-bold text-slate-700">${item.sender}</p><p class="text-slate-400 text-[9px] font-bold">Đã gửi thư</p></div>
+            contentWrapper.innerHTML = `
+                <div class="emoji-badge bg-yellow-50 text-yellow-600">💌</div>
+                <div>
+                    <p class="font-bold text-slate-700">${item.sender}</p>
+                    <p class="text-slate-400 text-[9px] font-bold">Đã gửi thư</p>
                 </div>`;
+            contentWrapper.onclick = () => openNote(item);
         }
 
-        const action = `
-            <div class="flex items-center gap-2">
-                <span class="text-[9px] text-slate-300">${new Date(item.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})}</span>
-                ${isOwner ? `<button onclick="deleteItem('${item.id}')" class="text-red-400 font-bold text-lg px-2">×</button>` : ''}
-            </div>`;
+        // Tạo vùng chứa thời gian và nút xóa
+        const actionWrapper = document.createElement('div');
+        actionWrapper.className = 'flex items-center gap-2';
+        const isOwner = currentUser && item.uid === currentUser.uid;
         
-        div.innerHTML = content + action;
+        const timeStr = new Date(item.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'});
+        
+        actionWrapper.innerHTML = `<span class="text-[9px] text-slate-300">${timeStr}</span>`;
+        
+        if (isOwner) {
+            const delBtn = document.createElement('button');
+            delBtn.className = 'text-red-400 font-bold text-lg px-2 hover:text-red-600 transition-colors';
+            delBtn.innerHTML = '×';
+            delBtn.onclick = (e) => {
+                e.stopPropagation(); // Ngăn chặn việc mở modal lời nhắn khi bấm xóa
+                deleteItem(item.id);
+            };
+            actionWrapper.appendChild(delBtn);
+        }
+
+        div.appendChild(contentWrapper);
+        div.appendChild(actionWrapper);
         feed.appendChild(div);
     });
 }
