@@ -96,7 +96,6 @@
             position: relative;
         }
 
-        /* Colors for balls */
         .ball-happy { background: radial-gradient(circle at 35% 35%, #86efac, #22c55e); }
         .ball-sad { background: radial-gradient(circle at 35% 35%, #93c5fd, #3b82f6); }
         .ball-angry { background: radial-gradient(circle at 35% 35%, #fca5a5, #ef4444); }
@@ -257,34 +256,31 @@
         let lastItemCount = 0;
         let pendingDeleteId = null;
         
-        // --- Âm thanh ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playPopSound(freq = 400, type = 'sine') {
+
+        // --- HÀM ÂM THANH TỪ BẢN CŨ ---
+        function playCrystalSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.4);
         }
 
         function playPaperSound() {
-            const bufferSize = audioCtx.sampleRate * 0.1;
-            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-            const noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'highpass'; filter.frequency.value = 1000;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            noise.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
-            noise.start();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.2);
         }
 
         function updateLoveCounter() {
@@ -340,11 +336,10 @@
             const jarEl = document.getElementById('jar-content');
             const allItems = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
             
-            // Xử lý âm thanh ting ting khi có đồ mới
+            // Xử lý âm thanh khi có đồ mới
             if (lastItemCount > 0 && allItems.length > lastItemCount) {
-                const newItem = allItems[0];
-                if (newItem.type) playPopSound(600, 'sine');
-                else playPaperSound();
+                const latest = allItems[0];
+                latest.type ? playCrystalSound() : playPaperSound();
             }
             lastItemCount = allItems.length;
 
@@ -420,7 +415,6 @@
         
         async function sendEmotion(emoji, type) {
             if (!currentUser) return;
-            playPopSound(500, 'sine');
             await db.collection("feelings_data").add({
                 emoji, type, sender: userName,
                 posX: Math.random() * 200 + 20, posY: Math.random() * 30,
@@ -433,7 +427,6 @@
             const input = document.getElementById('note-input');
             const text = input.value.trim();
             if (!text || !currentUser) return;
-            playPaperSound();
             await db.collection("feelings_data").add({
                 text, sender: userName,
                 posX: Math.random() * 200 + 20, posY: Math.random() * 50 + 20,
