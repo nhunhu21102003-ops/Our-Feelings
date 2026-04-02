@@ -160,20 +160,21 @@
     </style>
 </head>
 <body class="pb-10">
-    <iframe id="sc-widget" 
-            src="https://w.soundcloud.com/player/?url=https://soundcloud.com/thanh-ne-52243108/v-nh-ho-ng-d-ng-y-n-concret&auto_play=false" 
-            width="0" height="0" scrolling="no" frameborder="no" style="display:none;"></iframe>
+    <div class="max-w-lg mx-auto px-4 mt-10 mb-10">
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 px-2 text-center">Góc âm nhạc của chúng mình 🎵</p>
+        <iframe id="sc-widget" 
+                src="https://w.soundcloud.com/player/?url=https://soundcloud.com/thanh-ne-52243108/v-nh-ho-ng-d-ng-y-n-concret&color=%23ec4899&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&show_teaser=true" 
+                width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay"
+                class="rounded-3xl shadow-lg border-4 border-white"></iframe>
+    </div>
 
-<button onclick="toggleMusic()" id="music-btn" style="position: fixed; bottom: 80px; right: 20px; z-index: 999; background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer;">🎵</button>
-    <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
-        <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-pink-50">
-            <div class="text-center mb-8">
-                <div class="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                    <span class="text-white text-3xl">❤️</span>
-                </div>
-                <h1 class="text-2xl font-bold text-slate-800">Our Feelings</h1>
-                <p class="text-slate-500 text-sm mt-1">Nhập tên để kết nối với người tình</p>
+    <div id="login-screen" class="fixed inset-0 bg-[#ffd6e0] z-[500] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-sm p-10 rounded-[50px] shadow-2xl text-center border-b-8 border-pink-200">
+            <div class="w-16 h-16 bg-pink-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <span class="text-white text-3xl">❤️</span>
             </div>
+            <h1 class="text-2xl font-bold text-slate-800">Our Feelings</h1>
+            <p class="text-slate-500 text-sm mt-1 mb-6">Nhập tên để kết nối với người tình</p>
             <input type="text" id="username-input" placeholder="Tên của bạn..." 
                 class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-pink-400 outline-none mb-4 text-center">
             <button onclick="handleLogin()" class="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95">
@@ -198,11 +199,7 @@
                 <span class="text-lg">🔗</span>
             </button>
         </header>
-        <div id="music-notice" class="text-center mb-4">
-    <button onclick="forcePlayMusic()" class="bg-pink-100 text-pink-600 px-4 py-2 rounded-full text-[10px] font-bold animate-bounce">
-        Chạm để nghe nhạc nè 🎵
-    </button>
-</div>
+   
         <div class="jar-cap"></div>
         <div class="jar-container" id="jar-content"></div>
 
@@ -349,14 +346,19 @@ async function init() {
         }
     });
 }
-        function handleLogin() {
-            const name = document.getElementById('username-input').value.trim();
-            if (!name) return;
-            userName = name;
-            localStorage.setItem('jar_user_name', name);
-            widget.play();
-            showApp();
-        }
+       function handleLogin() {
+    const name = document.getElementById('username-input').value.trim();
+    if (!name) return;
+    userName = name;
+    localStorage.setItem('jar_user_name', name);
+    
+    // Thêm kiểm tra widget trước khi play
+    if (widget) {
+        widget.play();
+    }
+    
+    showApp();
+}
 
      function showApp() {
     document.getElementById('login-screen').classList.add('hidden');
@@ -563,41 +565,36 @@ async function init() {
             showToast("Đã sao chép link! ❤️");
         }
 
-// --- BỘ ĐIỀU KHIỂN SOUNDCLOUD MỚI ---
-const widgetElement = document.getElementById('sc-widget');
-const widget = SC.Widget(widgetElement);
+// --- ĐIỀU KHIỂN NHẠC SOUNDCLOUD ---
+let widget;
 
-// 1. Bấm loa để tắt/mở nhạc SoundCloud
-function toggleMusic() {
-    const btn = document.getElementById('music-btn');
-    widget.toggle();
-    widget.isPaused(function(paused) {
-        btn.textContent = paused ? '🔇' : '🎵';
+function setupSoundCloud() {
+    const widgetElement = document.getElementById('sc-widget');
+    if (!widgetElement) return;
+
+    widget = SC.Widget(widgetElement);
+
+    // Tự động lặp lại bài hát khi kết thúc
+    widget.bind(SC.Widget.Events.FINISH, function() {
+        widget.play();
     });
 }
 
-// 2. Ép nhạc phát khi bấm nút "Chạm để nghe nhạc"
-function forcePlayMusic() {
-    widget.play();
-    const notice = document.getElementById('music-notice');
-    if(notice) notice.style.display = 'none';
-    document.getElementById('music-btn').textContent = '🎵';
-}
+// Xoá các hàm toggleMusic và forcePlayMusic cũ vì không còn nút nữa
 
-// 3. Tự động phát khi Như chạm vào màn hình lần đầu
+// Khi chạm vào màn hình lần đầu vẫn hỗ trợ kích hoạt nhạc (nếu Như muốn)
 document.addEventListener('click', function() {
-    widget.play();
-    const notice = document.getElementById('music-notice');
-    if(notice) notice.style.display = 'none';
+    if (widget) {
+        widget.play();
+        const notice = document.getElementById('music-notice');
+        if(notice) notice.style.display = 'none';
+    }
 }, { once: true });
 
-// 4. Tự động lặp lại bài hát khi kết thúc (Loop)
-widget.bind(SC.Widget.Events.FINISH, function() {
-    widget.play();
-});
-
-// DÒNG NÀY LÀ DÒNG CUỐI CÙNG CỦA NHƯ
-window.onload = init;
+window.onload = () => {
+    init(); // Giữ nguyên hàm init cũ của Như
+    setupSoundCloud();
+};
     </script>
 </body>
 </html>
