@@ -125,6 +125,34 @@
             justify-content: center;
             font-size: 1.2rem;
             flex-shrink: 0;
+        /* Hiệu ứng cho dấu chấm đã xem */
+        .seen-dot {
+            width: 8px;
+            height: 8px;
+            background: #ec4899; 
+            border-radius: 50%;
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            border: 1px solid white;
+            z-index: 5;
+        }
+
+        /* Hiện tên người xem khi di chuột vào lá thư */
+        .note-paper:hover::after {
+            content: attr(data-viewers);
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 105, 180, 0.9); /* Màu hồng đậm trong suốt */
+            color: white;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 50;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
     </style>
 </head>
@@ -346,7 +374,7 @@
             jar.innerHTML = '';
             feed.innerHTML = '';
 
-            allItems.forEach(item => {
+           allItems.forEach(item => {
                 const el = document.createElement('div');
                 if (item.type) {
                     el.className = `ball ball-${item.type}`;
@@ -354,11 +382,24 @@
                 } else {
                     el.className = `note-paper`;
                     el.onclick = () => { playPaperSound(); openNote(item); };
+
+                    // KIỂM TRA NGƯỜI XEM Ở ĐÂY
+                    if (item.seenBy && item.seenBy.length > 0) {
+                        const viewers = item.seenBy.join(', ');
+                        el.setAttribute('data-viewers', `Đã xem bởi: ${viewers}`);
+                        
+                        const dot = document.createElement('div');
+                        dot.className = "seen-dot";
+                        el.appendChild(dot);
+                    }
                 }
                 el.style.left = `${item.posX}px`;
                 el.style.bottom = `${item.posY}px`;
                 el.style.setProperty('--r', `${item.rotation}deg`);
                 jar.appendChild(el);
+
+                // Phần tạo 'div' cho Nhật ký bên dưới giữ nguyên như cũ của bạn
+                // ... (Không cần sửa phần activity-feed nếu bạn muốn nó sạch sẽ)
 
                 const div = document.createElement('div');
                 div.className = 'bg-white/90 p-4 rounded-2xl flex items-center justify-between text-xs border border-white shadow-sm mb-2';
@@ -446,10 +487,23 @@
     showToast("Gửi lời nhắn thành công 💌");
 }
 
-        function openNote(note) {
+       async function openNote(note) {
             document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • TỪ: ${note.sender}`;
             document.getElementById('modal-text').textContent = note.text;
             document.getElementById('note-modal').style.display = 'flex';
+
+            // Xử lý lưu tên người xem
+            const seenBy = note.seenBy || [];
+            // Nếu người mở không phải người gửi và chưa có tên trong danh sách xem
+            if (note.sender !== userName && !seenBy.includes(userName)) {
+                try {
+                    await db.collection("feelings_data").doc(note.id).update({
+                        seenBy: firebase.firestore.FieldValue.arrayUnion(userName)
+                    });
+                } catch (e) {
+                    console.error("Lỗi cập nhật:", e);
+                }
+            }
         }
 
         function closeModal() { document.getElementById('note-modal').style.display = 'none'; }
