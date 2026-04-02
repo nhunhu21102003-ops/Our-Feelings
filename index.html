@@ -8,6 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+   <script src="https://w.soundcloud.com/player/api.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&family=Quicksand:wght@400;700&display=swap');
         
@@ -159,9 +160,9 @@
     </style>
 </head>
 <body class="pb-10">
- <audio id="bg-music" loop preload="auto">
-    <source src="https://tuna.voicemaker.in/api/get-audio?id=1-dZsfSVRcI2e3SCfN3ygFju_121mIGI_" type="audio/mpeg">
-</audio>
+    <iframe id="sc-widget" 
+            src="https://w.soundcloud.com/player/?url=https://soundcloud.com/thanh-ne-52243108/v-nh-ho-ng-d-ng-y-n-concret&auto_play=false" 
+            width="0" height="0" scrolling="no" frameborder="no" style="display:none;"></iframe>
 
 <button onclick="toggleMusic()" id="music-btn" style="position: fixed; bottom: 80px; right: 20px; z-index: 999; background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer;">🎵</button>
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
@@ -332,7 +333,7 @@ async function init() {
     try { 
         await auth.signInAnonymously(); 
     } catch (e) { 
-        console.error(e); 
+        console.error("Lỗi đăng nhập:", e); 
     }
 
     auth.onAuthStateChanged(user => {
@@ -340,12 +341,10 @@ async function init() {
             currentUser = user;
             if (userName) {
                 showApp();
-                // Thêm dòng này để thử phát nhạc ngay khi vào thẳng app
-                const music = document.getElementById('bg-music');
-                music.play().then(() => {
-                    const notice = document.getElementById('music-notice');
-                    if(notice) notice.style.display = 'none';
-                }).catch(() => console.log("Chờ Như chạm tay vào màn hình..."));
+                // Thử phát nhạc ngay khi vào lại app
+                widget.play();
+                const notice = document.getElementById('music-notice');
+                if(notice) notice.style.display = 'none';
             }
         }
     });
@@ -355,8 +354,7 @@ async function init() {
             if (!name) return;
             userName = name;
             localStorage.setItem('jar_user_name', name);
-            const music = document.getElementById('bg-music');
-            music.play().catch(e => console.log("Chờ tương tác"));
+            widget.play();
             showApp();
         }
 
@@ -468,7 +466,7 @@ async function init() {
                 jar.style.background = "rgba(255, 255, 255, 0.2)";
                 jar.style.borderColor = "rgba(255, 255, 255, 0.8)";
             }
-        }// Đây là dấu đóng ngoặc của hàm renderJar
+        }
 
         async function deleteItem(id) {
             pendingDeleteId = id;
@@ -564,43 +562,42 @@ async function init() {
             navigator.clipboard.writeText(window.location.href);
             showToast("Đã sao chép link! ❤️");
         }
-// 1. Hàm để bấm vào cái loa thì tắt/mở nhạc
-        function toggleMusic() {
-            const music = document.getElementById('bg-music');
-            const btn = document.getElementById('music-btn');
-            if (music.paused) {
-                music.play();
-                btn.textContent = '🎵'; // Hiện nốt nhạc khi đang hát
-            } else {
-                music.pause();
-                btn.textContent = '🔇'; // Hiện loa gạch chéo khi tắt
-            }
-        }
 
-        // 2. Tự động phát nhạc khi Như chạm vào bất cứ đâu lần đầu tiên
-        // (Vì trình duyệt chặn nhạc tự chạy nên phải có bước này)
-        document.addEventListener('click', function() {
-            const music = document.getElementById('bg-music');
-            if (music.paused) {
-                music.play().catch(e => console.log("Chưa phát được nhạc"));
-            }
-       }, { once: true }); 
+// --- BỘ ĐIỀU KHIỂN SOUNDCLOUD MỚI ---
+const widgetElement = document.getElementById('sc-widget');
+const widget = SC.Widget(widgetElement);
 
-        // Hàm này nằm riêng biệt, không lồng trong hàm khác
-       function forcePlayMusic() {
-    const music = document.getElementById('bg-music');
-    music.play().then(() => {
-        const notice = document.getElementById('music-notice');
-        if(notice) notice.style.display = 'none';
-        document.getElementById('music-btn').textContent = '🎵';
-    }).catch(e => {
-        console.log("Lỗi:", e);
-        // Nếu vẫn lỗi, thử đổi link Drive khác hoặc dùng link Dropbox/Soundcloud
-        alert("Nhạc vẫn đang ngại chưa hát, Như thử bấm lại lần nữa hoặc kiểm tra mạng nha!");
+// 1. Bấm loa để tắt/mở nhạc SoundCloud
+function toggleMusic() {
+    const btn = document.getElementById('music-btn');
+    widget.toggle();
+    widget.isPaused(function(paused) {
+        btn.textContent = paused ? '🔇' : '🎵';
     });
 }
 
-        window.onload = init;
+// 2. Ép nhạc phát khi bấm nút "Chạm để nghe nhạc"
+function forcePlayMusic() {
+    widget.play();
+    const notice = document.getElementById('music-notice');
+    if(notice) notice.style.display = 'none';
+    document.getElementById('music-btn').textContent = '🎵';
+}
+
+// 3. Tự động phát khi Như chạm vào màn hình lần đầu
+document.addEventListener('click', function() {
+    widget.play();
+    const notice = document.getElementById('music-notice');
+    if(notice) notice.style.display = 'none';
+}, { once: true });
+
+// 4. Tự động lặp lại bài hát khi kết thúc (Loop)
+widget.bind(SC.Widget.Events.FINISH, function() {
+    widget.play();
+});
+
+// DÒNG NÀY LÀ DÒNG CUỐI CÙNG CỦA NHƯ
+window.onload = init;
     </script>
 </body>
 </html>
