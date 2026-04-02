@@ -159,8 +159,8 @@
     </style>
 </head>
 <body class="pb-10">
-  <audio id="bg-music" loop>
-    <source src="https://docs.google.com/uc?export=download&id=1-dZsfSVRcI2e3SCfN3ygFju_121mIGI_" type="audio/mpeg">
+ <audio id="bg-music" loop preload="auto">
+    <source src="https://tuna.voicemaker.in/api/get-audio?id=1-dZsfSVRcI2e3SCfN3ygFju_121mIGI_" type="audio/mpeg">
 </audio>
 
 <button onclick="toggleMusic()" id="music-btn" style="position: fixed; bottom: 80px; right: 20px; z-index: 999; background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer;">🎵</button>
@@ -327,8 +327,8 @@
             const diffDays = Math.floor(Math.abs(now - startDate) / (1000 * 60 * 60 * 24));
             document.getElementById('love-counter').innerHTML = `Chúng mình đã bám nhau <span class="text-pink-500 font-bold">${diffDays}</span> ngày 💋`;
         }
-
-        async function init() {
+        
+async function init() {
     try { 
         await auth.signInAnonymously(); 
     } catch (e) { 
@@ -338,14 +338,18 @@
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
-            // Kiểm tra: Nếu đã có tên lưu trong máy thì vào thẳng App
             if (userName) {
                 showApp();
+                // Thêm dòng này để thử phát nhạc ngay khi vào thẳng app
+                const music = document.getElementById('bg-music');
+                music.play().then(() => {
+                    const notice = document.getElementById('music-notice');
+                    if(notice) notice.style.display = 'none';
+                }).catch(() => console.log("Chờ Như chạm tay vào màn hình..."));
             }
         }
     });
 }
-
         function handleLogin() {
             const name = document.getElementById('username-input').value.trim();
             if (!name) return;
@@ -583,18 +587,18 @@
        }, { once: true }); 
 
         // Hàm này nằm riêng biệt, không lồng trong hàm khác
-        function forcePlayMusic() {
-            const music = document.getElementById('bg-music');
-            music.play().then(() => {
-                // Nhạc phát xong thì ẩn cái nút thông báo đi cho đẹp
-                const notice = document.getElementById('music-notice');
-                if(notice) notice.style.display = 'none';
-                document.getElementById('music-btn').textContent = '🎵';
-            }).catch(e => {
-                console.log("Lỗi phát nhạc:", e);
-                alert("Hổng phát được nhạc rồi, Như kiểm tra lại link Drive nha!");
-            });
-        }
+       function forcePlayMusic() {
+    const music = document.getElementById('bg-music');
+    music.play().then(() => {
+        const notice = document.getElementById('music-notice');
+        if(notice) notice.style.display = 'none';
+        document.getElementById('music-btn').textContent = '🎵';
+    }).catch(e => {
+        console.log("Lỗi:", e);
+        // Nếu vẫn lỗi, thử đổi link Drive khác hoặc dùng link Dropbox/Soundcloud
+        alert("Nhạc vẫn đang ngại chưa hát, Như thử bấm lại lần nữa hoặc kiểm tra mạng nha!");
+    });
+}
 
         window.onload = init;
     </script>
