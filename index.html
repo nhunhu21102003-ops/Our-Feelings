@@ -325,14 +325,22 @@
         }
 
         async function init() {
-            try { await auth.signInAnonymously(); } catch (e) { console.error(e); }
-            auth.onAuthStateChanged(user => {
-                if (user) {
-                    currentUser = user;
-                    if (userName) showApp();
-                }
-            });
+    try { 
+        await auth.signInAnonymously(); 
+    } catch (e) { 
+        console.error(e); 
+    }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            // Kiểm tra: Nếu đã có tên lưu trong máy thì vào thẳng App
+            if (userName) {
+                showApp();
+            }
         }
+    });
+}
 
         function handleLogin() {
             const name = document.getElementById('username-input').value.trim();
@@ -344,13 +352,16 @@
             showApp();
         }
 
-        function showApp() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
-            updateLoveCounter();
-            startListening();
-        }
+     function showApp() {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-screen').classList.remove('hidden');
+    
+    // Đảm bảo tên được hiển thị đúng
+    document.getElementById('display-user').textContent = `Hi ${userName} ❤️`;
+    
+    updateLoveCounter();
+    startListening();
+}
 
         function startListening() {
             db.collection("feelings_data").orderBy('time', 'desc').onSnapshot(renderJar);
