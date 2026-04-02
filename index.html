@@ -159,7 +159,11 @@
     </style>
 </head>
 <body class="pb-10">
+    <audio id="bg-music" loop>
+        <source src="https://docs.google.com/uc?export=download&id=1-dZsfSVRcI2e3SCfN3ygFju_121mIGI_" type="audio/mpeg">
+    </audio>
 
+<button onclick="toggleMusic()" id="music-btn" style="position: fixed; bottom: 80px; right: 20px; z-index: 999; background: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer;">🎵</button>
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-6">
         <div class="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-pink-50">
             <div class="text-center mb-8">
@@ -335,6 +339,8 @@
             if (!name) return;
             userName = name;
             localStorage.setItem('jar_user_name', name);
+            const music = document.getElementById('bg-music');
+            music.play().catch(e => console.log("Chờ tương tác"));
             showApp();
         }
 
@@ -443,7 +449,7 @@
                 jar.style.background = "rgba(255, 255, 255, 0.2)";
                 jar.style.borderColor = "rgba(255, 255, 255, 0.8)";
             }
-        } // Đây là dấu đóng ngoặc của hàm renderJar
+        // Đây là dấu đóng ngoặc của hàm renderJar
 
         async function deleteItem(id) {
             pendingDeleteId = id;
@@ -539,7 +545,27 @@
             navigator.clipboard.writeText(window.location.href);
             showToast("Đã sao chép link! ❤️");
         }
+// 1. Hàm để bấm vào cái loa thì tắt/mở nhạc
+        function toggleMusic() {
+            const music = document.getElementById('bg-music');
+            const btn = document.getElementById('music-btn');
+            if (music.paused) {
+                music.play();
+                btn.textContent = '🎵'; // Hiện nốt nhạc khi đang hát
+            } else {
+                music.pause();
+                btn.textContent = '🔇'; // Hiện loa gạch chéo khi tắt
+            }
+        }
 
+        // 2. Tự động phát nhạc khi Như chạm vào bất cứ đâu lần đầu tiên
+        // (Vì trình duyệt chặn nhạc tự chạy nên phải có bước này)
+        document.addEventListener('click', function() {
+            const music = document.getElementById('bg-music');
+            if (music.paused) {
+                music.play().catch(e => console.log("Chưa phát được nhạc"));
+            }
+        }, { once: true }); // "once: true" để nó chỉ chạy đúng 1 lần đầu lúc vào web
         window.onload = init;
     </script>
 </body>
