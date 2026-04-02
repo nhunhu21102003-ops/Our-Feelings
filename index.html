@@ -414,27 +414,37 @@
         function closeDeleteModal() { document.getElementById('delete-modal').style.display = 'none'; }
         
         async function sendEmotion(emoji, type) {
-            if (!currentUser) return;
-            await db.collection("feelings_data").add({
-                emoji, type, sender: userName,
-                posX: Math.random() * 200 + 20, posY: Math.random() * 30,
-                rotation: Math.random() * 40 - 20, time: Date.now(), uid: currentUser.uid
-            });
-            showToast(`Đã thả ${emoji}!`);
-        }
-
+    if (!currentUser) return;
+    await db.collection("feelings_data").add({
+        emoji, 
+        type, 
+        sender: userName,
+        passcode: "cuccut", // THÊM DÒNG NÀY (Mã bí mật chung)
+        posX: Math.random() * 200 + 20, 
+        posY: Math.random() * 30,
+        rotation: Math.random() * 40 - 20, 
+        time: Date.now(), 
+        uid: currentUser.uid
+    });
+    showToast(`Đã thả ${emoji}!`);
+}
         async function sendNote() {
-            const input = document.getElementById('note-input');
-            const text = input.value.trim();
-            if (!text || !currentUser) return;
-            await db.collection("feelings_data").add({
-                text, sender: userName,
-                posX: Math.random() * 200 + 20, posY: Math.random() * 50 + 20,
-                rotation: Math.random() * 60 - 30, time: Date.now(), uid: currentUser.uid
-            });
-            input.value = '';
-            showToast("Gửi lời nhắn thành công 💌");
-        }
+    const input = document.getElementById('note-input');
+    const text = input.value.trim();
+    if (!text || !currentUser) return;
+    await db.collection("feelings_data").add({
+        text, 
+        sender: userName,
+        passcode: "cuccut", // THÊM DÒNG NÀY
+        posX: Math.random() * 200 + 20, 
+        posY: Math.random() * 50 + 20,
+        rotation: Math.random() * 60 - 30, 
+        time: Date.now(), 
+        uid: currentUser.uid
+    });
+    input.value = '';
+    showToast("Gửi lời nhắn thành công 💌");
+}
 
         function openNote(note) {
             document.getElementById('modal-meta').textContent = `${new Date(note.time).toLocaleString('vi-VN')} • TỪ: ${note.sender}`;
