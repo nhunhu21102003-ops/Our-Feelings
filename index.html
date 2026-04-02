@@ -125,6 +125,7 @@
             justify-content: center;
             font-size: 1.2rem;
             flex-shrink: 0;
+            }
         /* Hiệu ứng cho dấu chấm đã xem */
         .seen-dot {
             width: 8px;
@@ -361,7 +362,6 @@
         function renderJar(snapshot) {
             const jar = document.getElementById('jar-content');
             const feed = document.getElementById('activity-feed');
-            const jarEl = document.getElementById('jar-content');
             const allItems = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
             
             // Xử lý âm thanh khi có đồ mới
