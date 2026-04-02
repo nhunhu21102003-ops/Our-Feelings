@@ -28,6 +28,7 @@
             border-radius: 80px 80px 120px 120px;
             box-shadow: inset 0 10px 30px rgba(255,255,255,0.5), 0 20px 40px rgba(0,0,0,0.05);
             overflow: hidden;
+            transition: background 0.5s ease, border-color 0.5s ease;
         }
 
         .jar-cap {
@@ -432,15 +433,17 @@
                 feed.appendChild(div);
             });
 
+           // Tìm đoạn này ở cuối hàm renderJar và thay thế:
             const angryCount = allItems.filter(i => i.type === 'angry').length;
+            
             if (angryCount >= 3) {
-                jarEl.style.background = "rgba(254, 226, 226, 0.6)"; 
-                jarEl.style.borderColor = "#fca5a5";
+                jar.style.background = "rgba(254, 226, 226, 0.6)"; 
+                jar.style.borderColor = "#fca5a5";
             } else {
-                jarEl.style.background = "rgba(255, 255, 255, 0.2)";
-                jarEl.style.borderColor = "rgba(255, 255, 255, 0.8)";
+                jar.style.background = "rgba(255, 255, 255, 0.2)";
+                jar.style.borderColor = "rgba(255, 255, 255, 0.8)";
             }
-        }
+        } // Đây là dấu đóng ngoặc của hàm renderJar
 
         async function deleteItem(id) {
             pendingDeleteId = id;
